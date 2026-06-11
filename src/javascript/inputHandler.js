@@ -7,6 +7,10 @@ export default class InputHandler{
             x: 0,
             y: 0,
         };
+        this.cursorWorldPos = {
+            x: 0,
+            y: 0,
+        };
         this.camera = camera;
         this.keysPressed = {};
 
@@ -32,6 +36,8 @@ export default class InputHandler{
         document.addEventListener("mousemove", event => {
             this.cursorPos.x = event.clientX;
             this.cursorPos.y = event.clientY;
+            this.cursorWorldPos.x = event.clientX + camera.getPosition().x;
+            this.cursorWorldPos.y = event.clientY + camera.getPosition().y;
             game.handleMouseMoveInput(this.cursorPos);
 
         });

@@ -31,7 +31,7 @@ export default class Bullet extends MoveableObject{
         this.target.y = target.y;
     }
 
-    onCollision(other){
+    onCollision(other){        
         if(other instanceof Character){
             if(other.tag != this.tag){
                 other.takeDamage(this.damage);

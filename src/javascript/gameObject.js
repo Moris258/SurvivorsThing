@@ -21,16 +21,16 @@ export default class GameObject{
 
     update(deltaT){
         if(this.checkCollisions){
-            game.gameObjects.forEach(gameObject => {
+            game.gameObjects.slice().forEach(gameObject => {
                 if(gameObject === this) return;
                 if(!gameObject.checkCollisions) return;
 
                 let thisPos = this.getCenteredPos();
                 let otherPos = gameObject.getCenteredPos();
                 if(checkOverlap(thisPos, this.size, otherPos, gameObject.size)){
-                    this.onCollision(gameObject);
+                    this.onCollision(gameObject);            
                 }
-            });
+            }, this);
         }
     }
 

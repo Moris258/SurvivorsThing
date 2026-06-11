@@ -81,6 +81,7 @@ export default class Game{
     }
 
     removeGameObject(object){
+        if(!this.gameObjects.includes(object)) return;
         this.gameObjects.splice(this.gameObjects.indexOf(object), 1);
     }
 
@@ -91,8 +92,8 @@ export default class Game{
     update(deltaT){
         if(this.isPaused()) return;
 
-        this.gameObjects.forEach(object => {
-            object.update(deltaT);
+        this.gameObjects.slice().forEach(gameObject => {
+            gameObject.update(deltaT);
         });
     }
 

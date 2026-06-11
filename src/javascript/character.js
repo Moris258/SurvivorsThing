@@ -3,7 +3,7 @@ import { game } from "./game.js";
 import GameObject from "./gameObject.js";
 import MoveableObject from "./moveableObject.js";
 import { drawCircle, drawRectangle, moveTowards, pointsDistance, randomFloat, randomInt } from "./utility.js";
-import Weapon from "./weapon.js";
+import { AimedWeapon } from "./weapon.js";
 
 export default class Character extends MoveableObject{
     constructor(pos, HP, size) {
@@ -12,6 +12,7 @@ export default class Character extends MoveableObject{
         this.HP = HP;
         this.invincibilitySeconds = 0;
         this.invincibility = 0;
+        this.drawHitBoxes = false;
 
     }
 
@@ -38,7 +39,8 @@ export default class Character extends MoveableObject{
 
     draw(ctx, camera){
         super.draw(ctx, camera);
-        drawRectangle(ctx, camera.getPosition(), this.getCenteredPos(), this.size.x, this.size.y, "#00000000", {x: 0, y: 0}, true, "black", 1)
+        if(this.drawHitBoxes) 
+            drawRectangle(ctx, camera.getPosition(), this.getCenteredPos(), this.size.x, this.size.y, "#00000000", {x: 0, y: 0}, true, "black", 1)
         this.drawHPBar(ctx, camera);
     }
 
@@ -121,24 +123,14 @@ export class Player extends Character{
         return dir;
     }
 
-    updateTarget(cursorPos){
-        const cameraPos = game.camera.getPosition();
-        const target = {x: cameraPos.x + cursorPos.x, y: cameraPos.y + cursorPos.y};        
-        
-        this.weapons.forEach(weapon => {
-            weapon.setTarget(target);
-        });
-    }
-
     update(deltaT){
         super.update(deltaT);
         let inputs = game.inputHandler.keysPressed;
         this.setMoveDirection(this.getMovementInputs(inputs));
 
-        this.updateTarget(game.inputHandler.cursorPos);
-        this.weapons.forEach(weapon => {
-            weapon.update(deltaT);
-        });
+        // this.weapons.forEach(weapon => {
+        //     weapon.update(deltaT);
+        // });
         
     }
 
@@ -306,7 +298,7 @@ export class Mage extends Enemy {
                 
         console.log(this.shotLead);
         
-        this.weapon = new Weapon(this, this.damage, this.speed * 2, this.size.x/2, 1, "#9932CC");
+        this.weapon = new AimedWeapon(this, game.player.pos, this.damage, this.speed * 2, this.size.x/2, 1, "#9932CC");
     }
 
     update(deltaT){
@@ -316,7 +308,7 @@ export class Mage extends Enemy {
         const shootDir = {x: game.player.pos.x + game.player.moveDirection.x*this.shotLead*shotLeadMultiplier,
             y: game.player.pos.y + game.player.moveDirection.y*this.shotLead* shotLeadMultiplier};
         this.weapon.setTarget(shootDir);
-        this.weapon.update(deltaT);
+        //this.weapon.update(deltaT);
     }
 
     draw(ctx, camera){

@@ -2,7 +2,7 @@ import Camera from "./camera.js";
 import { Player } from "./character.js";
 import { game } from "./game.js";
 import InputHandler from "./inputHandler.js";
-import Weapon from "./weapon.js";
+import Weapon, { AimedWeapon, AuraWeapon } from "./weapon.js";
 
 // Get the canvas element and its context
 const canvas = document.getElementById('myCanvas');
@@ -22,7 +22,8 @@ let playerSize = {x: 40, y: 40};
 let player = new Player(playerPos, 100, playerSize, 1)
 game.setCanvasSize(CANVAS_WIDTH, CANVAS_HEIGHT);
 game.setPlayer(player);
-player.addWeapon(new Weapon(player, 5, 150, 20, 0.2, "#ff9900"));
+player.addWeapon(new AimedWeapon(player, game.inputHandler.cursorWorldPos, 5, 150, 20, 0.2, "#ff9900"));
+player.addWeapon(new AuraWeapon(player, 2, 100, 0.1, "#00ccff99"));
 game.addSpawner();
 canvas.width = CANVAS_WIDTH;
 canvas.height = CANVAS_HEIGHT;
