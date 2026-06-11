@@ -1,6 +1,8 @@
 import Camera from "./camera.js";
 import { Player } from "./character.js";
 import { game } from "./game.js";
+import InputHandler from "./inputHandler.js";
+import Weapon from "./weapon.js";
 
 // Get the canvas element and its context
 const canvas = document.getElementById('myCanvas');
@@ -14,11 +16,14 @@ const camera = game.camera;
 const CANVAS_WIDTH = 1920;
 const CANVAS_HEIGHT = 1080;
 game.setGameSize(CANVAS_WIDTH * 4, CANVAS_HEIGHT * 4);
+game.setInputHandler(new InputHandler(camera));
 let playerPos = {x: game.GAME_WIDTH / 2, y: game.GAME_HEIGHT / 2};
 let playerSize = {x: 40, y: 40};
+let player = new Player(playerPos, 100, playerSize, 1)
 game.setCanvasSize(CANVAS_WIDTH, CANVAS_HEIGHT);
-game.setPlayer(new Player(playerPos, 100, playerSize, 1));
-game.spawnEnemy();
+game.setPlayer(player);
+player.addWeapon(new Weapon(player, 5, 150, 20, 0.2, "#ff9900"));
+game.addSpawner();
 canvas.width = CANVAS_WIDTH;
 canvas.height = CANVAS_HEIGHT;
 

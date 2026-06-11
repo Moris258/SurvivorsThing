@@ -1,9 +1,10 @@
 import Camera from "./camera.js";
 import InputHandler from "./inputHandler.js";
-import { Player, Enemy } from "./character.js";
+import { Player, Enemy, Bruiser, Tank, Fighter, Mage, Dog } from "./character.js";
 import { drawRectangle, drawText } from "./utility.js";
 
 import Background from "./background.js";
+import EnemySpawner from "./enemySpawner.js";
 
 export default class Game{
     constructor(GAME_WIDTH = 800, GAME_HEIGHT = 600, CANVAS_WIDTH = 800, CANVAS_HEIGHT = 800) {
@@ -13,8 +14,9 @@ export default class Game{
         this.CANVAS_HEIGHT = CANVAS_HEIGHT;
         this.gameObjects = [];
         this.camera = new Camera();
-        this.inputHandler = new InputHandler(this.camera);
+        this.inputHandler = null;
         this.paused = false;
+        this.gameEnd = false;
         this.player = null;
         this.background = new Background(this.GAME_WIDTH, this.GAME_HEIGHT);
     }
@@ -25,8 +27,12 @@ export default class Game{
         this.camera.setOffset({x: -this.CANVAS_WIDTH/2, y: -this.CANVAS_HEIGHT/2});
     }
 
-    spawnEnemy(){
-        new Enemy({x: game.GAME_WIDTH / 2 - 100, y: game.GAME_HEIGHT / 2 - 100}, 10, {x: 20, y: 20}, 5);        
+    addSpawner(){
+        new EnemySpawner({x: game.GAME_WIDTH / 2 + 100, y: game.GAME_HEIGHT / 2 + 100}, 1)
+    }
+
+    endGame(){
+        this.gameEnd = true;
     }
 
     setGameSize(GAME_WIDTH = 800, GAME_HEIGHT = 600){
@@ -57,7 +63,6 @@ export default class Game{
                 this.paused = !this.paused;
                 break;
             default:
-                console.log("User pressed key: " + keyCode);
                 break;
         }
     }
@@ -68,7 +73,7 @@ export default class Game{
     handleWheelInput(scroll){
     }
 
-    handleMouseMoveInput(cursor){
+    handleMouseMoveInput(args){
     }
 
     addGameObject(object){
@@ -79,12 +84,38 @@ export default class Game{
         this.gameObjects.splice(this.gameObjects.indexOf(object), 1);
     }
 
+    isPaused(){
+        return this.paused || this.gameEnd;
+    }
+
     update(deltaT){
-        if(this.paused) return;
+        if(this.isPaused()) return;
 
         this.gameObjects.forEach(object => {
             object.update(deltaT);
         });
+    }
+
+    drawPauseBox(ctx, camera){
+        const pausedText = "Game Paused";
+        const size = 26;
+        ctx.font = size + "px serif";
+        ctx.fontSize = size;
+        const rectWidth = ctx.measureText(pausedText).width;            
+        
+        drawRectangle(ctx, {x: 0, y: 0}, {x: this.CANVAS_WIDTH/2 - rectWidth/2, y: this.CANVAS_HEIGHT/2 - size/2}, rectWidth, size, "#ffffff99", {x: 10, y: 10}, true, "black", 2);
+        drawText(ctx, {x: 0, y: 0}, {x: this.CANVAS_WIDTH/2, y: this.CANVAS_HEIGHT/2 + size/4}, pausedText, "black", size);
+    }
+
+    drawGameEndBox(ctx, camera){
+        const pausedText = "Game Over";
+        const size = 26;
+        ctx.font = size + "px serif";
+        ctx.fontSize = size;
+        const rectWidth = ctx.measureText(pausedText).width;            
+        
+        drawRectangle(ctx, {x: 0, y: 0}, {x: this.CANVAS_WIDTH/2 - rectWidth/2, y: this.CANVAS_HEIGHT/2 - size/2}, rectWidth, size, "#bb0000ff", {x: 10, y: 10}, true, "black", 2);
+        drawText(ctx, {x: 0, y: 0}, {x: this.CANVAS_WIDTH/2, y: this.CANVAS_HEIGHT/2 + size/4}, pausedText, "black", size);
     }
 
     draw(ctx, camera){
@@ -96,16 +127,8 @@ export default class Game{
             object.draw(ctx, camera);
         });
 
-        if(this.paused){
-            const pausedText = "Game Paused";
-            const size = 26;
-            ctx.font = size + "px serif";
-            ctx.fontSize = size;
-            const rectWidth = ctx.measureText(pausedText).width;
-            
-            drawRectangle(ctx, {x: 0, y: 0}, {x: this.GAME_WIDTH/2 - rectWidth/2, y: this.GAME_HEIGHT/2 - size/2}, rectWidth, size, "white", {x: 10, y: 10}, true, "black", 2);
-            drawText(ctx, {x: 0, y: 0}, {x: this.GAME_WIDTH/2, y: this.GAME_HEIGHT/2 + size/4}, pausedText, "black", size);
-        }
+        if(this.paused) this.drawPauseBox(ctx, camera);
+        if(this.gameEnd) this.drawGameEndBox(ctx, camera);
     }
 }
 

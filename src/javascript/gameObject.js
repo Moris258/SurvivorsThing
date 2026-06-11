@@ -3,9 +3,18 @@ import { checkOverlap } from "./utility.js";
 
 
 export default class GameObject{
-    constructor(pos, size = {x: 0, y: 0}, checkCollisions = false) {
+    /**
+     * Base class for all objects in the game that should be regularly updated and drawn.
+     * @param {{x: number, y: number}} pos - position of the GameObject.
+     * @param {{x: number, y: number}} size - size of the GameObject.
+     * @param {boolean} checkCollisions - whether collisions will be checked for this GameObject against
+     * other GameObjects.
+     * @param {string} tag - the GameObject's tag.
+     */
+    constructor(pos, size = {x: 0, y: 0}, checkCollisions = false, tag = "") {
         this.pos = {x: pos.x, y: pos.y};
         this.size = {x: size.x, y: size.y};
+        this.tag = tag;
         this.checkCollisions = checkCollisions;
         game.addGameObject(this);
     }
@@ -27,6 +36,10 @@ export default class GameObject{
 
     getCenteredPos(){
         return {x: this.pos.x - this.size.x/2, y: this.pos.y - this.size.y/2};
+    }
+
+    getPosition(){
+        return this.pos;
     }
 
     draw(ctx, camera){

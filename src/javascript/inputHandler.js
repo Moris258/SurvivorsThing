@@ -1,3 +1,4 @@
+import Event from "./event.js";
 import { game } from "./game.js";
 
 export default class InputHandler{
