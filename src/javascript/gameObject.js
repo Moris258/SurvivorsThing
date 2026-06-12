@@ -16,6 +16,7 @@ export default class GameObject{
         this.size = {x: size.x, y: size.y};
         this.tag = tag;
         this.checkCollisions = checkCollisions;
+        this.childObjects = [];
         game.addGameObject(this);
     }
 
@@ -42,6 +43,16 @@ export default class GameObject{
         return this.pos;
     }
 
+    addChildObject(object){
+        if(!(object instanceof GameObject)) return;
+        this.childObjects.push(object);
+    }
+
+    removeChildObject(object){
+        if(!this.childObjects.includes(object)) return;
+        this.childObjects.splice(this.childObjects.indexOf(object), 1);
+    }
+
     draw(ctx, camera){
 
     }
@@ -51,6 +62,9 @@ export default class GameObject{
     }
 
     remove(){
+        this.childObjects.forEach(object => {
+            game.removeGameObject(object);
+        });
         game.removeGameObject(this);
     }
 

@@ -5,6 +5,7 @@ import { drawRectangle, drawText } from "./utility.js";
 
 import Background from "./background.js";
 import EnemySpawner from "./enemySpawner.js";
+import GameObject from "./gameObject.js";
 
 export default class Game{
     constructor(GAME_WIDTH = 800, GAME_HEIGHT = 600, CANVAS_WIDTH = 800, CANVAS_HEIGHT = 800) {
@@ -77,6 +78,7 @@ export default class Game{
     }
 
     addGameObject(object){
+        if(!(object instanceof GameObject)) return;
         this.gameObjects.push(object);
     }
 

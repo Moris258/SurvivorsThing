@@ -15,6 +15,7 @@ export default class MoveableObject extends GameObject{
         this.speed = speed;
         this.moveDirection = {x: 0, y: 0};
         this.setMoveDirection(dir);
+            
         this.moveable = true;        
     }
 

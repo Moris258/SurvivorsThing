@@ -1,8 +1,11 @@
-import { drawRectangle, drawCircle } from "./utility.js";
+import { drawRectangle, drawCircle, lightenColor } from "./utility.js";
 
 const FLOWER_COLORS = ["#FF6BAA", "#FFD35C", "#F4A261", "#D46B9A", "#A9D973"];
 const FLOWER_CENTER_COLORS = ["#FFF3A3", "#F7E176", "#FFE09C"];
 const STEM_COLOR = "#2F6A2D";
+
+// Rock color definitions
+const ROCK_COLORS = ["#8B4513", "#696969", "#4B4C48"]; 
 
 export default class Background {
     constructor(width, height) {
@@ -16,8 +19,11 @@ export default class Background {
         this.patchColor = "#6EB94E";
         let patchScale = 100000;
         let flowerScale = 60000;
+        let rockScale = 500000;
+        // Initialize patches, flowers, and rocks
         this.patches = this.generatePatches((width*height)/patchScale);
         this.flowers = this.generateFlowers((width*height)/flowerScale);
+        this.rocks = this.generateRocks((width*height)/rockScale);
     }
 
     generatePatches(count) {
@@ -28,7 +34,7 @@ export default class Background {
             const patchHeight = this.randomInt(this.height * 0.08, this.height * 0.18);
             const x = this.randomInt(0, Math.max(0, this.width - patchWidth));
             const y = this.randomInt(0, Math.max(0, this.height - patchHeight));
-            const color = this.lightenColor(this.patchColor, this.randomInt(6, 18));
+            const color = lightenColor(this.patchColor, this.randomInt(6, 18));
 
             patches.push({ x, y, width: patchWidth, height: patchHeight, color });
         }
@@ -69,15 +75,41 @@ export default class Background {
         return flowers;
     }
 
+    generateRocks(count) {
+        const rocks = [];
+
+        for (let i = 0; i < count; i++) {
+            // Rocks are generally placed on the ground level
+            const x = this.randomInt(20, Math.max(0, this.width - 20));
+            const y = this.randomInt(20, this.height -20); // Constrain Y to lower part of background
+            const width = this.randomInt(15, 40);
+            const height = this.randomInt(10, 30);
+            // Pick a random rock color
+            const color = ROCK_COLORS[this.randomInt(0, ROCK_COLORS.length)];
+
+            rocks.push({ x, y, width: width, height: height, color });
+        }
+
+        return rocks;
+    }
+
     draw(ctx, camera) {
         const cameraPos = camera && typeof camera.getPosition === "function" ? camera.getPosition() : camera;
 
+        // 1. Draw Grass/Background base
         drawRectangle(ctx, cameraPos, { x: 0, y: 0 }, this.width, this.height, this.grassColor);
 
+        // 2. Draw patches (e.g., bushes)
         for (const patch of this.patches) {
             drawRectangle(ctx, cameraPos, { x: patch.x, y: patch.y }, patch.width, patch.height, patch.color, { x: 0, y: 0 }, false);
         }
 
+        // 3. Draw rocks (underneath other elements)
+        for (const rock of this.rocks) {
+            drawRectangle(ctx, cameraPos, { x: rock.x, y: rock.y }, rock.width, rock.height, rock.color);
+        }
+
+        // 4. Draw flowers
         for (const flower of this.flowers) {
             this.drawFlower(ctx, cameraPos, flower);
         }
@@ -85,7 +117,8 @@ export default class Background {
 
     drawFlower(ctx, cameraPos, flower) {
         const stemX = flower.pos.x - flower.stemWidth / 2;
-        const stemY = flower.pos.y;
+        // Adjust start Y to account for potential rock/patch coverage if necessary, but keeping original logic for now.
+        const stemY = flower.pos.y; 
         drawRectangle(ctx, cameraPos, { x: stemX, y: stemY }, flower.stemWidth, flower.stemHeight, STEM_COLOR);
 
         const center = { x: flower.pos.x, y: flower.pos.y };
@@ -108,19 +141,5 @@ export default class Background {
 
     randomInt(min, max) {
         return Math.floor(this.randomRange(min, max));
-    }
-
-    lightenColor(color, amount) {
-        const rgb = color.replace(/^#/, "");
-        const num = parseInt(rgb, 16);
-        let r = (num >> 16) + amount;
-        let g = ((num >> 8) & 0x00FF) + amount;
-        let b = (num & 0x0000FF) + amount;
-
-        r = Math.min(255, Math.max(0, r));
-        g = Math.min(255, Math.max(0, g));
-        b = Math.min(255, Math.max(0, b));
-
-        return `#${r.toString(16).padStart(2, "0")}${g.toString(16).padStart(2, "0")}${b.toString(16).padStart(2, "0")}`;
     }
 }

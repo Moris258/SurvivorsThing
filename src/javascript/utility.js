@@ -120,6 +120,17 @@ export function randomFloat(from, to){
 }
 
 /**
+ * Generates a random hexadecimal color string (e.g., "#A3B1C2").
+ * @returns {string} A 7-character hex code starting with '#'.
+ */
+export function randomColorHex(){
+    // Generate a random number from 0 to 16777215 (FFFFFF in decimal)
+    const randomInt = Math.floor(Math.random() * 0xFFFFFF);
+    // Convert it to a hex string and pad with leading zeros if necessary
+    return "#" + randomInt.toString(16).padStart(6, '0').toUpperCase();
+}
+
+/**
  * Checks if two rectangular areas overlap on the canvas. Can check for side-only overlap.
  * @param {{x: number, y: number}} pos1 - Top-left position of the first rectangle.
  * @param {{x: number, y: number}} size1 - Dimensions (width and height) of the first rectangle.
@@ -226,4 +237,24 @@ export function moveTowards(target, origin, spread = 0){
     dir = normalizeVector(dir);
 
     return dir;
+}
+
+/**
+ * Makes the input color lighter by "amount".
+ * @param {string} color - The color to be lightened (hexadecimal color string).
+ * @param {number} amount - Amount to lighten the color by (0-255).
+ * @returns 
+ */
+export function lightenColor(color, amount) {
+    const rgb = color.replace(/^#/, "");
+    const num = parseInt(rgb, 16);
+    let r = (num >> 16) + amount;
+    let g = ((num >> 8) & 0x00FF) + amount;
+    let b = (num & 0x0000FF) + amount;
+
+    r = Math.min(255, Math.max(0, r));
+    g = Math.min(255, Math.max(0, g));
+    b = Math.min(255, Math.max(0, b));
+
+    return `#${r.toString(16).padStart(2, "0")}${g.toString(16).padStart(2, "0")}${b.toString(16).padStart(2, "0")}`;
 }

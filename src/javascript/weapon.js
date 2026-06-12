@@ -1,4 +1,4 @@
-import Bullet from './bullet.js'; // Assuming Bullet class is exported here
+import Bullet, { ExplosiveBullet } from './bullet.js'; // Assuming Bullet class is exported here
 import Character, { Enemy } from './character.js';
 import { game } from './game.js';
 import GameObject from './gameObject.js';
@@ -168,3 +168,90 @@ export class AuraWeapon extends Weapon {
         super.upgrade(upgradeLevel);
     }
 }
+
+/**
+ * ExplosiveWeapon targets the closest enemy and fires explosive bullets.
+ * On impact, bullets explode and damage enemies in a radius.
+ */
+export class ExplosiveWeapon extends Weapon {
+    /**
+     * @param {Character} owner - The object that owns the weapon.
+     * @param {number} initialDamage - Initial damage value.
+     * @param {number} initialSpeed - Initial bullet speed.
+     * @param {number} initialSize - Visual size of the weapon.
+     * @param {number} fireRate - Time interval (in seconds) between shots.
+     * @param {number} explosionRadius - Radius of explosion effect.
+     * @param {string} bulletColor - Color of the bullet.
+     */
+    constructor(owner, initialDamage = 15, initialSpeed = 12, initialSize = 3, fireRate = 0.5, explosionRadius = 80, bulletColor = "#ff0000") {
+        super(owner, initialDamage, initialSpeed, initialSize, fireRate);
+        this.explosionRadius = explosionRadius;
+        this.closestTarget = null;
+        this.bulletColor = bulletColor;
+    }
+
+    update(deltaT) {
+        // Update closest target each frame
+        this.updateClosestTarget();
+        super.update(deltaT);
+    }
+
+    /**
+     * Find the closest enemy to the weapon owner.
+     */
+    updateClosestTarget() {
+        const nearbyEnemies = game.gameObjects.filter(value => {
+            return value instanceof Character && value.tag != this.tag;
+        });
+
+        if (nearbyEnemies.length === 0) {
+            this.closestTarget = null;
+            return;
+        }
+
+        // Find the closest enemy
+        let closest = nearbyEnemies[0];
+        let minDistance = pointsDistance(this.owner.getPosition(), closest.getPosition());
+
+        for (let i = 1; i < nearbyEnemies.length; i++) {
+            const distance = pointsDistance(this.owner.getPosition(), nearbyEnemies[i].getPosition());
+            if (distance < minDistance) {
+                minDistance = distance;
+                closest = nearbyEnemies[i];
+            }
+        }
+
+        this.closestTarget = closest;
+    }
+
+    /**
+     * Fire an explosive bullet at the closest target.
+     */
+    shoot() {
+        if (this.closestTarget === null) return;
+
+        const origin = this.owner.getPosition();
+        const targetPos = this.closestTarget.getPosition();
+
+        // Create an explosive bullet
+        const bullet = new ExplosiveBullet(
+            origin,
+            {x: this.size, y: this.size},
+            this.speed,
+            moveTowards(targetPos, origin, this.spread),
+            this.damage,
+            this.explosionRadius,
+            10,
+            this.bulletColor,
+            this.owner.tag
+        );
+    }
+
+    upgrade(upgradeLevel = 1) {
+        super.upgrade(upgradeLevel);
+        // Also upgrade explosion radius
+        this.explosionRadius *= (1 + 0.15 * upgradeLevel);
+    }
+}
+
+

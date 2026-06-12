@@ -1,9 +1,10 @@
 import Event from "./event.js";
+import ExpOrb from "./expOrb.js";
 import { game } from "./game.js";
 import GameObject from "./gameObject.js";
 import MoveableObject from "./moveableObject.js";
 import { drawCircle, drawRectangle, moveTowards, pointsDistance, randomFloat, randomInt } from "./utility.js";
-import { AimedWeapon } from "./weapon.js";
+import { AimedWeapon, AuraWeapon, ExplosiveWeapon } from "./weapon.js";
 
 export default class Character extends MoveableObject{
     constructor(pos, HP, size) {
@@ -70,11 +71,13 @@ export class Player extends Character{
         this.speed = 200;
         this.level = level;
         this.XP = 0;
+        this.nextLevelXP = 100;
         this.defense = 0;
         this.weapons = [];
         this.upgrades = [];
         this.tag = "Player";
         this.invincibilitySeconds = 1;
+        this.XPAttractionRange = 100;
 
         this.controls = ["KeyW", "KeyA", "KeyS", "KeyD"];
         this.controlMovement = {
@@ -92,13 +95,23 @@ export class Player extends Character{
     }
 
     onLevelUpHandler(args){
-        this.XP = 0;
-        this.level += 1;
+        let player = args.player;
+        player.XP -= player.nextLevelXP;
+        player.nextLevelXP *= 2;
+        player.level += 1;
         //TODO: display upgrade options
+    }
+
+    addExp(exp){
+        this.XP += exp;
+        if(this.XP > this.nextLevelXP){
+            this.onLevelUp.callEvents({player: this, level: this.level})
+        }
     }
 
     addWeapon(weapon){
         this.weapons.push(weapon);
+        this.addChildObject(weapon);
     }
 
     takeDamage(damage){
@@ -126,18 +139,25 @@ export class Player extends Character{
     update(deltaT){
         super.update(deltaT);
         let inputs = game.inputHandler.keysPressed;
-        this.setMoveDirection(this.getMovementInputs(inputs));
-
-        // this.weapons.forEach(weapon => {
-        //     weapon.update(deltaT);
-        // });
-        
+        this.setMoveDirection(this.getMovementInputs(inputs));        
     }
 
     draw(ctx, camera){
         super.draw(ctx, camera);
 
         drawCircle(ctx, camera.getPosition(), this.pos, this.size.x/2, "red", true, "black", 1);
+        this.drawXPBar(ctx)
+    }
+
+    drawXPBar(ctx){
+        let xpBarMargin = 20;
+        let pos = {x: 0, y: 0};
+        let xpBarWidth = game.CANVAS_WIDTH - xpBarMargin * 2;
+        let xpBarHeight = 6;
+        let xpBarPos = {x: pos.x + xpBarMargin, y: pos.y + xpBarHeight + xpBarMargin/4};
+        drawRectangle(ctx, {x: 0, y: 0}, xpBarPos, xpBarWidth, xpBarHeight, "#9e9e9e", {x: 0, y:0}, true, "black");
+        let xpBarHealthWidth = xpBarWidth * (this.XP/this.nextLevelXP);
+        drawRectangle(ctx, {x: 0, y: 0}, xpBarPos, xpBarHealthWidth, xpBarHeight, "#d4ad00");        
     }
 }
 
@@ -151,8 +171,19 @@ export class Enemy extends Character {
     }
 
     died(){
-        //TODO: spawn XP orbs
         super.died();
+
+        this.spawnXPOrbs(randomInt(1, 5));
+    }
+
+    spawnXPOrbs(count){
+        for(let i = 0; i < count; i++){
+            const enemyPos = this.getPosition();
+            const xpOrbPos = {x: enemyPos.x + randomInt(-20, 20), y: enemyPos.y + randomInt(-20, 20)};
+
+            let value = randomInt(2, 7);
+            let orb = new ExpOrb(xpOrbPos, {x: value*2, y: value*2}, value);
+        }
     }
 
     update(deltaT){
@@ -298,17 +329,43 @@ export class Mage extends Enemy {
                 
         console.log(this.shotLead);
         
-        this.weapon = new AimedWeapon(this, game.player.pos, this.damage, this.speed * 2, this.size.x/2, 1, "#9932CC");
+        this.giveWeapon(randomInt(0, 2));
+        this.addChildObject(this.weapon);
+    }
+
+    died(){
+        super.died();
+    }
+
+    giveWeapon(weaponIndex){
+        switch(weaponIndex){
+            case 0:
+                this.weapon = new AimedWeapon(this, game.player.pos, this.damage, this.speed * 2, this.size.x/2, 1, "#9932CC");
+                break;
+            case 1:
+                this.weapon = new ExplosiveWeapon(this, this.damage, this.speed * 2, this.size.x/2, 1, 50, "#9932CC");
+                break;
+            case 2:
+                this.weapon = new AuraWeapon(this, this.damage/2, 100, 1, "#a252ca93");
+                break;
+        }
+
+        this.addChildObject(this.weapon);
     }
 
     update(deltaT){
         super.update(deltaT);
+        this.aimWeapon();
+    }
+
+    aimWeapon(){
+        if(!(this.weapon instanceof AimedWeapon)) return;
+        
         let distance = pointsDistance(this.pos, game.player.pos);
         let shotLeadMultiplier = distance / 10;
         const shootDir = {x: game.player.pos.x + game.player.moveDirection.x*this.shotLead*shotLeadMultiplier,
             y: game.player.pos.y + game.player.moveDirection.y*this.shotLead* shotLeadMultiplier};
         this.weapon.setTarget(shootDir);
-        //this.weapon.update(deltaT);
     }
 
     draw(ctx, camera){
