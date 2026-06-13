@@ -1,5 +1,6 @@
+import { game } from "./game.js";
 import GameObject from "./gameObject.js";
-import { normalizeVector } from "./utility.js";
+import { checkOverlap, normalizeVector } from "./utility.js";
 
 export default class MoveableObject extends GameObject{
     /**
@@ -16,15 +17,16 @@ export default class MoveableObject extends GameObject{
         this.moveDirection = {x: 0, y: 0};
         this.setMoveDirection(dir);
             
-        this.moveable = true;        
+        this.moveable = true;
+        this.prevPos = {x: pos.x, y: pos.y};
     }
 
     setMoveDirection(dir){
-        dir = normalizeVector(dir);
         if(isNaN(dir.x) || isNaN(dir.y)) {
             console.error("Tried to set move direction of GameObject with invalid values.");       
             return;
         }
+        dir = normalizeVector(dir);
         
         this.moveDirection.x = dir.x;
         this.moveDirection.y = dir.y;
@@ -35,9 +37,31 @@ export default class MoveableObject extends GameObject{
     }
     
     update(deltaT){
+        //if(this.canMove(deltaT))
+        this.prevPos = {x: this.pos.x, y: this.pos.y};
+        this.move(this.getMovementVector(deltaT));
         super.update(deltaT);
+    }
+
+    getMovementVector(deltaT){
+        return {x: this.moveDirection.x * this.speed * deltaT, y: this.moveDirection.y * this.speed * deltaT};
+    }
+
+    canMove(deltaT){
+        let rigidObjects = game.gameObjects.filter(object => object.rigidObject);
+        const nextMoveVector = this.getMovementVector(deltaT);
+        const nextPos = {x: this.pos.x + nextMoveVector.x, y: this.pos.y + nextMoveVector.y};
+
+        for(let i = 0; i < rigidObjects.length; i++){
+            const obstacle = rigidObjects[i];
+
+            if(checkOverlap(nextPos, this.size, obstacle.getCenteredPos(), obstacle.getSize())){
+                
+                return false;
+            }
+        }
         
-        this.move({x: this.moveDirection.x * this.speed * deltaT, y: this.moveDirection.y * this.speed * deltaT});
+        return true;
     }
 
     move(movement){
@@ -50,6 +74,13 @@ export default class MoveableObject extends GameObject{
 
         this.pos.x += movement.x;
         this.pos.y += movement.y;
-        
+    }
+
+    onCollision(other){
+        super.onCollision(other);
+        if(other.isRigid()){
+            this.pos.x = this.prevPos.x;
+            this.pos.y = this.prevPos.y;
+        }
     }
 }

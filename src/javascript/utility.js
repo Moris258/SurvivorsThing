@@ -136,7 +136,7 @@ export function randomColorHex(){
  * @param {{x: number, y: number}} size1 - Dimensions (width and height) of the first rectangle.
  * @param {{x: number, y: number}} pos2 - Top-left position of the second rectangle.
  * @param {{x: number, y: number}} size2 - Dimensions (width and height) of the second rectangle.
- * @param {boolean} [sideOverlap=false] - If true, only checks for side overlap (touching edges). Otherwise, performs full intersection check.
+ * @param {boolean} [sideOverlap=false] - If true, edge overlaps won't count as an overlap.
  * @returns {boolean} True if the rectangles overlap or touch based on `sideOverlap`, false otherwise.
  */
 export function checkOverlap(pos1, size1, pos2, size2, sideOverlap = false){
@@ -257,4 +257,125 @@ export function lightenColor(color, amount) {
     b = Math.min(255, Math.max(0, b));
 
     return `#${r.toString(16).padStart(2, "0")}${g.toString(16).padStart(2, "0")}${b.toString(16).padStart(2, "0")}`;
+}
+
+/**
+ * Rotates a 2D vector by a given number of degrees.
+ * @param {x: number, y: number} vector - The x,y coordinates of the vector.
+ * @param {number} degrees - The angle in degrees to rotate the vector by.
+ * @returns {Object} An object containing the new x and y coordinates after rotation.
+ */
+export function rotateVector(vector, degrees) {
+    const rad = degrees * (Math.PI / 180);
+    const cos = Math.cos(rad);
+    const sin = Math.sin(rad);
+
+    const newX = vector.x * cos - vector.y * sin;
+    const newY = vector.x * sin + vector.y * cos;    
+    return { x: newX, y: newY };
+}
+
+/**
+ * Calculates the angle between two 2D vectors in degrees
+ * @param {{x: number, y: number}} vector1 - First vector with {x, y} properties
+ * @param {{x: number, y: number}} vector2 - Second vector with {x, y} properties
+ * @returns {number} Angle in degrees between the vectors (0-360)
+ */
+export function calculateAngleBetweenVectors(vector1, vector2) {
+    // Handle edge cases
+    if (vector1.x === 0 && vector1.y === 0 || vector2.x === 0 && vector2.y === 0) {
+        return 0;
+    }
+    
+    // Calculate dot product and magnitudes
+    const dotProduct = vector1.x * vector2.x + vector1.y * vector2.y;
+    const magnitude1 = Math.sqrt(vector1.x * vector1.x + vector1.y * vector1.y);
+    const magnitude2 = Math.sqrt(vector2.x * vector2.x + vector2.y * vector2.y);
+    
+    // Avoid division by zero
+    if (magnitude1 === 0 || magnitude2 === 0) {
+        return 0;
+    }
+    
+    // Calculate cosine of the angle
+    const cosTheta = dotProduct / (magnitude1 * magnitude2);
+    
+    // Clamp cosine value to [-1, 1] to avoid floating point errors
+    const clampedCosTheta = Math.max(-1, Math.min(1, cosTheta));
+    
+    // Calculate angle in radians, then convert to degrees
+    const angleRad = Math.acos(clampedCosTheta);
+    const angleDeg = angleRad * (180 / Math.PI);
+    
+    // Ensure the angle is in the range [0, 360)
+    return angleDeg;
+}
+
+/**
+ * Calculates the degrees a 2D vector needs to rotate to align with another 2D vector
+ * @param {Object} vector1 - First vector with {x, y} properties (current orientation)
+ * @param {Object} vector2 - Second vector with {x, y} properties (target orientation)
+ * @returns {number} Rotation angle in degrees (positive for clockwise, negative for counterclockwise)
+ */
+export function calculateRotationDegrees(vector1, vector2) {
+    // Handle edge cases
+    if (vector1.x === 0 && vector1.y === 0 || vector2.x === 0 && vector2.y === 0) {
+        return 0;
+    }
+    
+    // Calculate the angle between the two vectors using the dot product method
+    const dotProduct = vector1.x * vector2.x + vector1.y * vector2.y;
+    const magnitude1 = Math.sqrt(vector1.x * vector1.x + vector1.y * vector1.y);
+    const magnitude2 = Math.sqrt(vector2.x * vector2.x + vector2.y * vector2.y);
+    
+    // Avoid division by zero
+    if (magnitude1 === 0 || magnitude2 === 0) {
+        return 0;
+    }
+    
+    // Calculate cosine of the angle between vectors
+    const cosTheta = dotProduct / (magnitude1 * magnitude2);
+    
+    // Clamp cosine value to [-1, 1] to avoid floating point errors
+    const clampedCosTheta = Math.max(-1, Math.min(1, cosTheta));
+    
+    // Calculate angle in radians, then convert to degrees
+    const angleRad = Math.acos(clampedCosTheta);
+    const angleDeg = angleRad * (180 / Math.PI);
+    
+    // Determine the direction of rotation using the cross product
+    const crossProduct = vector1.x * vector2.y - vector1.y * vector2.x;
+    
+    // If cross product is positive, rotation is counterclockwise (negative)
+    // If cross product is negative, rotation is clockwise (positive)
+    // If cross product is zero, vectors are parallel
+    if (crossProduct > 0) {
+        return -angleDeg;
+    } else if (crossProduct < 0) {
+        return angleDeg;
+    } else {
+        return 0;
+    }
+}
+
+
+/**
+ * Checks if a circle overlaps with a rectangle.
+ *
+ * @param {Object} circlePos - The position of the circle as {x, y}.
+ * @param {number} radius - The radius of the circle.
+ * @param {Object} rectPos - The position of the rectangle as {x, y}.
+ * @param {Object} rectSize - The size of the rectangle as {x, y}.
+ * @returns {boolean} - Returns true if the circle overlaps with the rectangle, false otherwise.
+ */
+export function checkCircleRectangleOverlap(circlePos, radius, rectPos, rectSize) {
+    const closestX = Math.max(rectPos.x, Math.min(circlePos.x, rectPos.x + rectSize.x));
+    const closestY = Math.max(rectPos.y, Math.min(circlePos.y, rectPos.y + rectSize.y));
+
+    const distanceX = circlePos.x - closestX;
+    const distanceY = circlePos.y - closestY;
+
+    const distanceSquared = (distanceX * distanceX) + (distanceY * distanceY);
+
+    return distanceSquared < (radius * radius);
 }

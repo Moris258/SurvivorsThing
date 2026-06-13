@@ -2,8 +2,6 @@ import Camera from "./camera.js";
 import InputHandler from "./inputHandler.js";
 import { Player, Enemy, Bruiser, Tank, Fighter, Mage, Dog } from "./character.js";
 import { drawRectangle, drawText } from "./utility.js";
-
-import Background from "./background.js";
 import EnemySpawner from "./enemySpawner.js";
 import GameObject from "./gameObject.js";
 
@@ -19,13 +17,17 @@ export default class Game{
         this.paused = false;
         this.gameEnd = false;
         this.player = null;
-        this.background = new Background(this.GAME_WIDTH, this.GAME_HEIGHT);
+        this.background = null;
     }
 
     setPlayer(player){
         this.player = player;
         this.camera.setPositionAsObject(this.player.pos);
         this.camera.setOffset({x: -this.CANVAS_WIDTH/2, y: -this.CANVAS_HEIGHT/2});
+    }
+
+    setBackground(background){
+        this.background = background;
     }
 
     addSpawner(){
@@ -79,6 +81,7 @@ export default class Game{
 
     addGameObject(object){
         if(!(object instanceof GameObject)) return;
+        if(this.gameObjects.includes(object)) return;
         this.gameObjects.push(object);
     }
 
@@ -93,6 +96,9 @@ export default class Game{
 
     update(deltaT){
         if(this.isPaused()) return;
+        if(this.background){
+            this.background.update(deltaT);
+        }
 
         this.gameObjects.slice().forEach(gameObject => {
             gameObject.update(deltaT);
@@ -129,6 +135,10 @@ export default class Game{
         this.gameObjects.forEach(object => {
             object.draw(ctx, camera);
         });
+
+        if(this.background)
+            this.background.drawWeatherEffects(ctx, camera);
+
 
         if(this.paused) this.drawPauseBox(ctx, camera);
         if(this.gameEnd) this.drawGameEndBox(ctx, camera);

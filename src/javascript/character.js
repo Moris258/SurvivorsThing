@@ -3,8 +3,9 @@ import ExpOrb from "./expOrb.js";
 import { game } from "./game.js";
 import GameObject from "./gameObject.js";
 import MoveableObject from "./moveableObject.js";
+import Stats from "./stat.js";
 import { drawCircle, drawRectangle, moveTowards, pointsDistance, randomFloat, randomInt } from "./utility.js";
-import { AimedWeapon, AuraWeapon, ExplosiveWeapon } from "./weapon.js";
+import { AimedWeapon, AuraWeapon, ExplosiveWeapon, HomingWeapon } from "./weapon.js";
 
 export default class Character extends MoveableObject{
     constructor(pos, HP, size) {
@@ -13,7 +14,6 @@ export default class Character extends MoveableObject{
         this.HP = HP;
         this.invincibilitySeconds = 0;
         this.invincibility = 0;
-        this.drawHitBoxes = false;
 
     }
 
@@ -40,8 +40,6 @@ export default class Character extends MoveableObject{
 
     draw(ctx, camera){
         super.draw(ctx, camera);
-        if(this.drawHitBoxes) 
-            drawRectangle(ctx, camera.getPosition(), this.getCenteredPos(), this.size.x, this.size.y, "#00000000", {x: 0, y: 0}, true, "black", 1)
         this.drawHPBar(ctx, camera);
     }
 
@@ -50,6 +48,7 @@ export default class Character extends MoveableObject{
     }
 
     onCollision(other){
+        super.onCollision(other);
     }
 
     drawHPBar(ctx, camera){
@@ -68,16 +67,18 @@ export default class Character extends MoveableObject{
 export class Player extends Character{
     constructor(pos, HP, size, level) {
         super(pos, HP, size);
-        this.speed = 200;
         this.level = level;
         this.XP = 0;
         this.nextLevelXP = 100;
-        this.defense = 0;
         this.weapons = [];
         this.upgrades = [];
         this.tag = "Player";
         this.invincibilitySeconds = 1;
-        this.XPAttractionRange = 100;
+
+        this.stats = new Stats();
+        this.stats.addStat("Speed", 200, -1);
+        this.stats.addStat("Defense", 0, -1);
+        this.stats.addStat("XPAttractionRange", 100, -1);
 
         this.controls = ["KeyW", "KeyA", "KeyS", "KeyD"];
         this.controlMovement = {
@@ -100,6 +101,7 @@ export class Player extends Character{
         player.nextLevelXP *= 2;
         player.level += 1;
         //TODO: display upgrade options
+        
     }
 
     addExp(exp){
@@ -115,8 +117,15 @@ export class Player extends Character{
     }
 
     takeDamage(damage){
-        super.takeDamage(Math.max(0, damage - this.defense));
+        super.takeDamage(Math.max(0, damage - this.stats.getStatValue("Defense")));
     }
+
+    
+    getMovementVector(deltaT){
+        let speed = this.stats.getStatValue("Speed");
+        return {x: this.moveDirection.x * speed * deltaT, y: this.moveDirection.y * speed * deltaT};
+    }
+
 
     died(){
         //Show game over screen
@@ -196,6 +205,7 @@ export class Enemy extends Character {
     }
 
     onCollision(other){
+        super.onCollision(other);
         if(other.tag != "Player" || !(other instanceof Player)) return;       
 
         other.takeDamage(this.damage);
@@ -326,10 +336,8 @@ export class Mage extends Enemy {
         super(pos, HP, size, damage);
         this.speed = 100;
         this.shotLead = randomInt(0, 10);
-                
-        console.log(this.shotLead);
         
-        this.giveWeapon(randomInt(0, 2));
+        this.giveWeapon(randomInt(0, 3));
         this.addChildObject(this.weapon);
     }
 
@@ -346,8 +354,11 @@ export class Mage extends Enemy {
                 this.weapon = new ExplosiveWeapon(this, this.damage, this.speed * 2, this.size.x/2, 1, 50, "#9932CC");
                 break;
             case 2:
-                this.weapon = new AuraWeapon(this, this.damage/2, 100, 1, "#a252ca93");
+                this.weapon = new AuraWeapon(this, this.damage/2, this.size.x * 3, 1, "#a252ca93");
                 break;
+            case 3:
+                this.weapon = new HomingWeapon(this, this.damage/2, this.speed * 1.5, this.size.x/2, 2, 90, "#9932CC");
+                break;  
         }
 
         this.addChildObject(this.weapon);

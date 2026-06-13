@@ -20,10 +20,11 @@ export default class ExpOrb extends MoveableObject{
         super.update(deltaT);
         const player = game.player;
         let distanceToPlayer = pointsDistance(player.getPosition(), this.getPosition());
+        let XPAttractionRange = player.stats.getStatValue("XPAttractionRange");
         
 
-        if(distanceToPlayer < player.XPAttractionRange){
-            this.speed = (1 - distanceToPlayer/player.XPAttractionRange) * this.maxSpeed;
+        if(distanceToPlayer < XPAttractionRange){
+            this.speed = (1 - distanceToPlayer/XPAttractionRange) * this.maxSpeed;
             
             this.setMoveDirection(moveTowards(player.getPosition(), this.getPosition()));
         }

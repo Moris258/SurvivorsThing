@@ -1,5 +1,6 @@
+import Character from "./character.js";
 import { game } from "./game.js";
-import { checkOverlap } from "./utility.js";
+import { checkOverlap, drawRectangle, pointsDistance } from "./utility.js";
 
 
 export default class GameObject{
@@ -16,8 +17,10 @@ export default class GameObject{
         this.size = {x: size.x, y: size.y};
         this.tag = tag;
         this.checkCollisions = checkCollisions;
+        this.rigidObject = false;
         this.childObjects = [];
         game.addGameObject(this);
+        this.drawHitBoxes = true;
     }
 
     update(deltaT){
@@ -28,11 +31,15 @@ export default class GameObject{
 
                 let thisPos = this.getCenteredPos();
                 let otherPos = gameObject.getCenteredPos();
-                if(checkOverlap(thisPos, this.size, otherPos, gameObject.size)){
+                if(checkOverlap(thisPos, this.size, otherPos, gameObject.size, true)){
                     this.onCollision(gameObject);            
                 }
             }, this);
         }
+    }
+
+    isRigid(){
+        return this.rigidObject;
     }
 
     getCenteredPos(){
@@ -41,6 +48,10 @@ export default class GameObject{
 
     getPosition(){
         return this.pos;
+    }
+
+    getSize(){
+        return this.size;
     }
 
     addChildObject(object){
@@ -54,7 +65,8 @@ export default class GameObject{
     }
 
     draw(ctx, camera){
-
+        if(this.drawHitBoxes) 
+            drawRectangle(ctx, camera.getPosition(), this.getCenteredPos(), this.size.x, this.size.y, "#00000000", {x: 0, y: 0}, true, "black", 1);
     }
 
     onCollision(other){
@@ -76,5 +88,35 @@ export default class GameObject{
 
         this.pos.x = newPos.x;
         this.pos.y = newPos.y;
+    }
+
+    
+    /**
+     * Find the closest enemy to the weapon owner.
+     */
+    static findClosestTarget(source) {
+        if(!(source instanceof GameObject)) return null;
+
+        const nearbyEnemies = game.gameObjects.filter(value => {
+            return value instanceof Character && value.tag != source.tag;
+        });
+
+        if (nearbyEnemies.length === 0) {
+            return null;
+        }
+
+        // Find the closest enemy
+        let closest = nearbyEnemies[0];
+        let minDistance = pointsDistance(source.getPosition(), closest.getPosition());
+
+        for (let i = 1; i < nearbyEnemies.length; i++) {
+            const distance = pointsDistance(source.getPosition(), nearbyEnemies[i].getPosition());
+            if (distance < minDistance) {
+                minDistance = distance;
+                closest = nearbyEnemies[i];
+            }
+        }
+
+        return closest;
     }
 }

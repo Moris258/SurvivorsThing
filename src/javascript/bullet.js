@@ -2,44 +2,85 @@ import Character from "./character.js";
 import { game } from "./game.js";
 import GameObject from "./gameObject.js";
 import MoveableObject from "./moveableObject.js";
-import { drawCircle, moveTowards, pointsDistance } from "./utility.js";
+import { calculateRotationDegrees, checkCircleRectangleOverlap, drawCircle, moveTowards, pointsDistance, rotateVector } from "./utility.js";
 
 export default class Bullet extends MoveableObject{
-    constructor(pos, size, speed, dir, damage = 10, lifespan = 10, color = "yellow", target = null, homing = false) {
+    constructor(pos, size, speed, dir, damage = 10, lifespan = 10, color = "yellow", pierce = 1) {
         super(pos, size, true, speed, dir);
-        this.target = target;
         this.damage = damage;
-        this.homing = homing;
         this.lifespan = lifespan;
         this.color = color;
+        this.pierce = pierce;
     }
 
     update(deltaT){
         super.update(deltaT);
-        if(this.homing && this.target != null){
-            this.setMoveDirection(moveTowards(this.target, this.pos));
-        }
         this.lifespan -= deltaT;
         if(this.lifespan <= 0)
             this.remove();
     }
 
     draw(ctx, camera){
-        drawCircle(ctx, camera.getPosition(), this.pos, this.size.x/2, this.color);
+        drawCircle(ctx, camera.getPosition(), this.pos, this.size.x/2, this.color, true);
     }
 
-    setTarget(target){
-        this.target.x = target.x;
-        this.target.y = target.y;
-    }
 
     onCollision(other){        
-        if(other instanceof Character){
-            if(other.tag != this.tag){
-                other.takeDamage(this.damage);
+        super.onCollision(other);
+        if(this.pierce <= 0) return;
+        if ((other instanceof Character && other.tag != this.tag)) {            
+            this.pierce -= 1;
+            other.takeDamage(this.damage);
+            if(this.pierce <= 0)
                 this.remove();
-            }
         }
+        else if(other.isRigid()){
+            this.remove();
+        }
+    }
+}
+
+export class HomingBullet extends Bullet {
+    constructor(pos, size, speed, dir, damage = 10, rotationSpeed = 20, lifespan = 10, color = "yellow", pierce = 1, target = null) {
+        super(pos, size, speed, dir, damage, lifespan, color, pierce);
+        this.rotationSpeed = rotationSpeed;   
+        this.target = null;
+        this.setTarget(target);
+    }
+    
+    setTarget(target){
+        this.target = target;
+    }
+
+    update(deltaT){
+        super.update(deltaT);
+        if(this.target == null)
+            this.target = GameObject.findClosestTarget(this);
+        this.homeOn(deltaT);        
+    }
+
+    draw(ctx, camera){
+        super.draw(ctx, camera);
+    }
+
+    homeOn(deltaT){        
+        if(this.target == null) return;
+        if(!game.gameObjects.includes(this.target)){
+            this.target = null;
+            return;
+        }
+        
+        const tolerance = 0.5;
+        const rotateTarget = calculateRotationDegrees(moveTowards(this.target.pos, this.pos), this.moveDirection);
+        if(Math.abs(rotateTarget) <= tolerance) return;
+
+        const rotateDir = rotateTarget < 0 ? -1 : 1
+
+        let rotateDegrees = (deltaT / 1) * this.rotationSpeed * rotateDir;
+        if(Math.abs(rotateDegrees) > Math.abs(rotateTarget))
+            rotateDegrees = rotateTarget;        
+
+        this.setMoveDirection(rotateVector(this.moveDirection, rotateDegrees));
     }
 }
 
@@ -62,6 +103,7 @@ export class ExplosiveBullet extends Bullet {
         super(pos, size, speed, dir, damage, lifespan, color);
         this.explosionRadius = explosionRadius;
         this.tag = ownerTag;
+        this.pierce = 1;
     }
 
     drawExplosion(){
@@ -76,19 +118,6 @@ export class ExplosiveBullet extends Bullet {
         explosionEffect.update = (deltaT) => {
             explosionEffect.lifespan -= deltaT;
             if(explosionEffect.lifespan <= 0) explosionEffect.remove();
-        }
-    }
-
-    /**
-     * On collision, trigger an explosion that damages nearby enemies.
-     */
-    onCollision(other) {
-        if (other instanceof Character && other.tag != this.tag) {
-            // Damage the hit target
-            other.takeDamage(this.damage);
-            
-            // Trigger explosion and damage nearby enemies
-            this.remove();
         }
     }
 
@@ -108,7 +137,7 @@ export class ExplosiveBullet extends Bullet {
 
         nearbyEnemies.forEach(enemy => {
             const distance = pointsDistance(this.pos, enemy.getPosition());
-            if (distance <= this.explosionRadius) {
+            if (checkCircleRectangleOverlap(this.pos, this.explosionRadius, enemy.pos, enemy.size)) {
                 // Apply reduced damage based on distance from explosion center
                 const damageMultiplier = 1 - (distance / this.explosionRadius) * 0.5; // 50% damage reduction at max range
                 const finalDamage = this.damage * damageMultiplier;

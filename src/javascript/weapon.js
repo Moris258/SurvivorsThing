@@ -1,8 +1,9 @@
-import Bullet, { ExplosiveBullet } from './bullet.js'; // Assuming Bullet class is exported here
+import Bullet, { ExplosiveBullet, HomingBullet } from './bullet.js'; // Assuming Bullet class is exported here
 import Character, { Enemy } from './character.js';
 import { game } from './game.js';
 import GameObject from './gameObject.js';
-import { drawCircle, moveTowards, pointsDistance, randomFloat } from './utility.js';
+import Stats from './stat.js';
+import { checkCircleRectangleOverlap, drawCircle, moveTowards, pointsDistance, randomFloat, rotateVector } from './utility.js';
 
 export default class Weapon extends GameObject{    
     /**
@@ -16,15 +17,17 @@ export default class Weapon extends GameObject{
         super({x: 0, y: 0}, {x: 0, y: 0}, false, owner.tag);
         this.owner = owner;
 
-        this.damage = initialDamage;
-        this.speed = initialSpeed;
-        this.size = initialSize;
-        this.spread = 0.15;
         this.level = 1;
 
         // Firing state variables
-        this.fireRate = fireRate;
         this.lastFireTime = 0;
+        
+        this.stats = new Stats();
+        this.stats.addStat("Damage", initialDamage, -1);
+        this.stats.addStat("Speed", initialSpeed, -1);
+        this.stats.addStat("Size", initialSize, -1);
+        this.stats.addStat("FireRate", fireRate, -1);
+        this.stats.addStat("Spread", 0.15, -1);
     }
 
     /**
@@ -32,10 +35,10 @@ export default class Weapon extends GameObject{
      * @param {number} deltaT - Time elapsed since the last frame (in seconds).
      */
     update(deltaT) {
-        const currentTime = Date.now() / 1000; // Get current time in seconds
+        const currentTime = Date.now() / 1000; // Get current time in second
 
         // Check if enough time has passed since the last shot
-        if (currentTime - this.lastFireTime >= this.fireRate) {
+        if (currentTime - this.lastFireTime >= this.stats.getStatValue("FireRate")) {
             this.shoot();
             this.lastFireTime = currentTime;
         }
@@ -50,7 +53,9 @@ export default class Weapon extends GameObject{
         this.damage *= (1 + 0.2 * upgradeLevel); // Increase damage by 20% per level
         this.speed *= (1 + 0.1 * upgradeLevel);  // Increase speed by 10% per level
         this.fireRate = Math.max(0.05, this.fireRate * (1 - 0.08 * upgradeLevel)); // Reduce fire rate, minimum 0.05s
-        console.log(`Weapon upgraded to Level ${upgradeLevel}. Damage: ${this.damage.toFixed(2)}, Speed: ${this.speed.toFixed(2)}, Fire Rate: ${this.fireRate.toFixed(2)}`);
+        console.log(`Weapon upgraded to Level ${this.level}. \nDamage: ${this.damage.toFixed(2)}, 
+        \nSpeed: ${this.speed.toFixed(2)}, 
+        \nFire Rate: ${this.fireRate.toFixed(2)}`);
     }
 }
 
@@ -64,12 +69,12 @@ export class AimedWeapon extends Weapon{
      * @param {number} initialSize - Visual size of the weapon model/attachment point.
      * @param {number} fireRate - Time interval (in seconds) between shots.
      */
-    constructor(owner, target, initialDamage = 10, initialSpeed = 15, initialSize = 2, fireRate = 0.2, bulletColor = "yellow") {
+    constructor(owner, target, initialDamage = 10, initialSpeed = 250, initialSize = 20, fireRate = 0.2, bulletColor = "yellow", pierce = 1) {
         super(owner, initialDamage, initialSpeed, initialSize, fireRate);
         this.target = target;
         
-        this.spread = 0.15;
         this.bulletColor = bulletColor;
+        this.stats.addStat("Pierce", pierce, -1);
     }
 
     update(deltaT){
@@ -80,11 +85,19 @@ export class AimedWeapon extends Weapon{
      * Creates and launches a new bullet object from the weapon owner's position.
      */
     shoot() {
-        // For simplicity, we use the owner's current position as the bullet origin.
         const origin = this.owner.getPosition();
+        const size = this.stats.getStatValue("Size");
 
         // Create the bullet instance
-        const bullet = new Bullet(origin, {x: this.size, y: this.size}, this.speed, moveTowards(this.target, origin, this.spread), this.damage, 10, this.bulletColor);
+        const bullet = new Bullet(
+            origin,
+            {x: size, y: size},
+            this.stats.getStatValue("Speed"),
+            moveTowards(this.target, origin, this.stats.getStatValue("Spread")),
+            this.stats.getStatValue("Damage"),
+            10, this.bulletColor, 
+            this.stats.getStatValue("Pierce")
+        );
         bullet.tag = this.owner.tag;
     }
 
@@ -103,6 +116,67 @@ export class AimedWeapon extends Weapon{
      */
     upgrade(upgradeLevel) {
         super.upgrade(upgradeLevel);
+        this.pierce += upgradeLevel;
+    }
+}
+
+
+export class HomingWeapon extends Weapon {
+    /**
+     * HomingWeapon fires bullets that home in on the closest target.
+     * It creates multiple bullets per shot, each with randomized initial direction.
+     * The bullets rotate toward the target and maintain a specified pierce value.
+     * 
+     * @param {GameObject} owner - The owner of this weapon.
+     * @param {number} initialDamage - The base damage of the bullet (default: 5).
+     * @param {number} initialSpeed - The speed of the bullet (default: 150).
+     * @param {number} initialSize - The size of the bullet (default: 2).
+     * @param {number} fireRate - The rate at which the weapon fires (default: 1).
+     * @param {number} rotationSpeed - The rotation speed of the bullet (default: 20).
+     * @param {string} bulletColor - The color of the bullet (default: "yellow").
+     * @param {number} pierce - The number of enemies the bullet can pierce (default: 1).
+     */
+
+    constructor(owner, initialDamage = 5, initialSpeed = 150, initialSize = 2, fireRate = 1, rotationSpeed = 20, bulletColor = "yellow", pierce = 1) {
+        super(owner, initialDamage, initialSpeed, initialSize, fireRate);
+        this.bulletColor = bulletColor;
+        this.closestTarget = null;
+
+        this.stats.addStat("Pierce", pierce, -1);
+        this.stats.addStat("RotationSpeed", rotationSpeed, -1);
+        this.stats.addStat("BulletCount", 2, -1);
+        
+    }
+
+    update(deltaT){
+        this.closestTarget = GameObject.findClosestTarget(this);
+        super.update(deltaT);
+    }
+
+    shoot(){
+        if (this.closestTarget === null) return;
+
+        const origin = this.owner.getPosition();
+        const target = this.closestTarget;
+
+        const size = this.stats.getStatValue("Size");
+
+        // Create a homing bullet
+        for(let i = 0; i < this.stats.getStatValue("BulletCount"); i++){
+            const bullet = new HomingBullet(
+                origin,
+                {x: size, y: size},
+                this.stats.getStatValue("Speed"),
+                rotateVector(moveTowards(target.pos, origin, this.stats.getStatValue("Spread")), randomFloat(-180, 180)),
+                this.stats.getStatValue("Damage"),
+                this.stats.getStatValue("RotationSpeed"),
+                5, 
+                this.bulletColor, 
+                this.stats.getStatValue("Pierce"),
+                target
+            );
+            bullet.tag = this.owner.tag;
+        }
     }
 }
 
@@ -112,7 +186,12 @@ export class AimedWeapon extends Weapon{
  */
 export class AuraWeapon extends Weapon {
     /**
-     *
+     * Creates a new AuraWeapon instance.
+     * @param {GameObject} owner - The owner of this weapon.
+     * @param {number} initialDamage - The initial damage per tick (default: 10).
+     * @param {number} initialRadius - The initial radius of the aura (default: 60).
+     * @param {number} fireRate - The rate at which the weapon fires (default: 2).
+     * @param {string} auraColor - The color of the aura (default: '#ffff0099').
      */
     constructor(owner, initialDamage = 10, initialRadius = 60, fireRate = 2, auraColor = "#ffff0099") {
         super(owner, initialDamage, 0, initialRadius, fireRate);
@@ -127,13 +206,14 @@ export class AuraWeapon extends Weapon {
         const ownerPos = this.owner.getPosition();
         
         // 1. Draw the main aura circle (retaining original functionality)
-        drawCircle(ctx, camera.getPosition(), ownerPos, this.size, this.auraColor);
+        const size = this.stats.getStatValue("Size");
+        drawCircle(ctx, camera.getPosition(), ownerPos, size, this.auraColor);
 
         // 2. Draw spinning stars effect
         const starCount = 30;
         for (let i = 0; i < starCount; i++) {
             const angle = (i / starCount) * Math.PI * 2 + (Date.now() / 4000)  * Math.PI * 2; // Distribute points evenly around a circle
-            const radiusOffset = this.size * 0.8; // Stars are slightly inside the main aura radius
+            const radiusOffset = size * 0.8; // Stars are slightly inside the main aura radius
             
             
             // Calculate position for the star, adding a slight rotation component over time for dynamism
@@ -142,7 +222,7 @@ export class AuraWeapon extends Weapon {
             
 
             // Draw the star (using a small white circle for visibility)
-            drawCircle(ctx, camera.getPosition(), {x: x, y: y}, randomFloat(1, 2), 'rgba(255, 255, 255, 0.8)');
+            drawCircle(ctx, camera.getPosition(), {x: x, y: y}, randomFloat(size/100, size/50), 'rgba(255, 255, 255, 0.8)');
         }
     }
 
@@ -158,8 +238,8 @@ export class AuraWeapon extends Weapon {
         const origin = this.owner.getPosition();       
         const targets = this.getNearbyEnemies();
         targets.forEach(target => {
-            if(pointsDistance(this.owner.getPosition(), target.getPosition()) <= this.size){
-                target.takeDamage(this.damage);
+            if(checkCircleRectangleOverlap(origin, this.stats.getStatValue("Size"), target.pos, target.size)){
+                target.takeDamage(this.stats.getStatValue("Damage"));
             }
         });
     }
@@ -185,43 +265,15 @@ export class ExplosiveWeapon extends Weapon {
      */
     constructor(owner, initialDamage = 15, initialSpeed = 12, initialSize = 3, fireRate = 0.5, explosionRadius = 80, bulletColor = "#ff0000") {
         super(owner, initialDamage, initialSpeed, initialSize, fireRate);
-        this.explosionRadius = explosionRadius;
+        this.stats.addStat("ExplosionRadius", explosionRadius, -1);
         this.closestTarget = null;
         this.bulletColor = bulletColor;
     }
 
     update(deltaT) {
         // Update closest target each frame
-        this.updateClosestTarget();
+        this.closestTarget = GameObject.findClosestTarget(this.owner);
         super.update(deltaT);
-    }
-
-    /**
-     * Find the closest enemy to the weapon owner.
-     */
-    updateClosestTarget() {
-        const nearbyEnemies = game.gameObjects.filter(value => {
-            return value instanceof Character && value.tag != this.tag;
-        });
-
-        if (nearbyEnemies.length === 0) {
-            this.closestTarget = null;
-            return;
-        }
-
-        // Find the closest enemy
-        let closest = nearbyEnemies[0];
-        let minDistance = pointsDistance(this.owner.getPosition(), closest.getPosition());
-
-        for (let i = 1; i < nearbyEnemies.length; i++) {
-            const distance = pointsDistance(this.owner.getPosition(), nearbyEnemies[i].getPosition());
-            if (distance < minDistance) {
-                minDistance = distance;
-                closest = nearbyEnemies[i];
-            }
-        }
-
-        this.closestTarget = closest;
     }
 
     /**
@@ -232,15 +284,16 @@ export class ExplosiveWeapon extends Weapon {
 
         const origin = this.owner.getPosition();
         const targetPos = this.closestTarget.getPosition();
+        const size = this.stats.getStatValue("Size");
 
         // Create an explosive bullet
         const bullet = new ExplosiveBullet(
             origin,
-            {x: this.size, y: this.size},
-            this.speed,
-            moveTowards(targetPos, origin, this.spread),
-            this.damage,
-            this.explosionRadius,
+            {x: size, y: size},
+            this.stats.getStatValue("Speed"),
+            moveTowards(targetPos, origin, this.stats.getStatValue("Spread")),
+            this.stats.getStatValue("Damage"),
+            this.stats.getStatValue("ExplosionRadius"),
             10,
             this.bulletColor,
             this.owner.tag
