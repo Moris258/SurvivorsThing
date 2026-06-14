@@ -60,10 +60,14 @@ export default class Game{
         this.inputHandler = handler;
     }
 
+    pauseGame(pause){
+        this.paused = pause;
+    }
+
     handleKeyInput(keyCode){
         switch(keyCode){
             case "Backquote":
-                this.paused = !this.paused;
+                this.pauseGame(!this.paused);
                 break;
             default:
                 break;
@@ -112,8 +116,8 @@ export default class Game{
         ctx.fontSize = size;
         const rectWidth = ctx.measureText(pausedText).width;            
         
-        drawRectangle(ctx, {x: 0, y: 0}, {x: this.CANVAS_WIDTH/2 - rectWidth/2, y: this.CANVAS_HEIGHT/2 - size/2}, rectWidth, size, "#ffffff99", {x: 10, y: 10}, true, "black", 2);
-        drawText(ctx, {x: 0, y: 0}, {x: this.CANVAS_WIDTH/2, y: this.CANVAS_HEIGHT/2 + size/4}, pausedText, "black", size);
+        drawRectangle(ctx, {x: 0, y: 0}, {x: this.CANVAS_WIDTH/2 - rectWidth/2, y: size*2}, rectWidth, size, "#ffffff99", {x: 10, y: 10}, true, "black", 2);
+        drawText(ctx, {x: 0, y: 0}, {x: this.CANVAS_WIDTH/2, y: size*2.75}, pausedText, "black", size);
     }
 
     drawGameEndBox(ctx, camera){
