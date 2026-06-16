@@ -1,9 +1,10 @@
 import Camera from "./camera.js";
 import InputHandler from "./inputHandler.js";
 import { Player, Enemy, Bruiser, Tank, Fighter, Mage, Dog } from "./character.js";
-import { drawRectangle, drawText } from "./utility.js";
+import { checkOverlap, drawRectangle, drawText } from "./utility.js";
 import EnemySpawner from "./enemySpawner.js";
 import GameObject from "./gameObject.js";
+import UIObject from "./UIObject.js";
 
 export default class Game{
     constructor(GAME_WIDTH = 800, GAME_HEIGHT = 600, CANVAS_WIDTH = 800, CANVAS_HEIGHT = 800) {
@@ -12,6 +13,7 @@ export default class Game{
         this.CANVAS_WIDTH = CANVAS_WIDTH;
         this.CANVAS_HEIGHT = CANVAS_HEIGHT;
         this.gameObjects = [];
+        this.UIObjects = [];
         this.camera = new Camera();
         this.inputHandler = null;
         this.paused = false;
@@ -75,21 +77,39 @@ export default class Game{
     }
 
     handleMouseClickInput(cursor){
+        for (const UIElement of this.UIObjects){
+            if(!UIElement instanceof UIObject) continue;
+            if(checkOverlap(cursor, {x: 0, y: 0}, UIElement.getCenteredPos(), UIElement.getSize()))
+                UIElement.onClick(cursor);
+        }
     }
 
     handleWheelInput(scroll){
+
     }
 
     handleMouseMoveInput(args){
+
     }
 
     addGameObject(object){
         if(!(object instanceof GameObject)) return;
+        if(object.tag === "UI"){
+            if(this.UIObjects.includes(object)) return;
+            this.UIObjects.push(object);
+            return;
+        }
         if(this.gameObjects.includes(object)) return;
         this.gameObjects.push(object);
     }
 
     removeGameObject(object){
+        if(object.tag === "UI"){
+            if(!this.UIObjects.includes(object)) return;
+            this.UIObjects.splice(this.UIObjects.indexOf(object), 1);
+            return;
+        }
+
         if(!this.gameObjects.includes(object)) return;
         this.gameObjects.splice(this.gameObjects.indexOf(object), 1);
     }
@@ -131,6 +151,12 @@ export default class Game{
         drawText(ctx, {x: 0, y: 0}, {x: this.CANVAS_WIDTH/2, y: this.CANVAS_HEIGHT/2 + size/4}, pausedText, "black", size);
     }
 
+    drawUI(ctx, camera){
+        this.UIObjects.forEach(object => {
+            object.draw(ctx, camera);
+        });
+    }
+
     draw(ctx, camera){
         if(this.background){
             this.background.draw(ctx, camera);
@@ -143,6 +169,7 @@ export default class Game{
         if(this.background)
             this.background.drawWeatherEffects(ctx, camera);
 
+        this.drawUI(ctx, camera);
 
         if(this.paused) this.drawPauseBox(ctx, camera);
         if(this.gameEnd) this.drawGameEndBox(ctx, camera);

@@ -25,8 +25,7 @@ export default class Bullet extends MoveableObject{
     }
 
 
-    onCollision(other){        
-        super.onCollision(other);
+    onCollisionEnter(other){        
         if(this.pierce <= 0) return;
         if ((other instanceof Character && other.tag != this.tag)) {            
             this.pierce -= 1;

@@ -4,6 +4,7 @@ import { game } from "./game.js";
 import GameObject from "./gameObject.js";
 import MoveableObject from "./moveableObject.js";
 import Stats from "./stat.js";
+import { UpgradeCard } from "./UIObject.js";
 import { drawCircle, drawRectangle, moveTowards, pointsDistance, randomFloat, randomInt } from "./utility.js";
 import { AimedWeapon, AuraWeapon, ExplosiveWeapon, HomingWeapon } from "./weapon.js";
 
@@ -90,18 +91,136 @@ export class Player extends Character{
 
         this.MAX_WEAPONS = 6;
         this.MAX_UPGRADES = 6;
+        this.numUpgradeOptionsToGenerate = 3;
 
         this.onLevelUp = new Event();
         this.onLevelUp.addEvent(this.onLevelUpHandler);
+
+        
+        let XPBar = new GameObject({x: 0, y: 0}, {x: 0, y: 0}, false, "UI");
+        XPBar.draw = this.drawXPBar;
+        XPBar.player = this;
+
+        this.upgradeCards = [];        
     }
 
     onLevelUpHandler(args){
         let player = args.player;
         player.XP -= player.nextLevelXP;
-        player.nextLevelXP *= 2;
+        player.nextLevelXP *= 1.2;
         player.level += 1;
-        //TODO: display upgrade options
+        game.pauseGame(true);
+        player.generateUpgradeCards();
         
+    }
+
+    dismissUpgrades(){
+        for (const upgrade of this.upgradeCards) {
+            upgrade.remove();
+        }
+        this.upgradeCards = [];
+        game.pauseGame(false);
+    }
+
+    generateUpgradeCards() {
+        const upgradeOptions = [];
+        
+        // Add player stat upgrade options
+        const playerStatNames = this.stats.getUpgradeableStatNames();
+        for (const statName of playerStatNames) {
+            upgradeOptions.push({ 
+                type: 'player', 
+                target: this, 
+                stat: statName,
+                displayName: `Player\n${statName}`
+            });
+        }
+        
+        // Add weapon stat upgrade options
+        for (const weapon of this.weapons) {
+            const weaponStatNames = weapon.stats.getUpgradeableStatNames();
+            for (const statName of weaponStatNames) {
+                upgradeOptions.push({ 
+                    type: 'weapon', 
+                    target: weapon, 
+                    stat: statName,
+                    weaponName: weapon.name,
+                    displayName: `${weapon.name}\n${statName}`
+                });
+            }
+        }
+        
+        // Add new weapon options (weapons player doesn't have)
+        const availableWeaponNames = ['AimedWeapon', 'ExplosiveWeapon', 'AuraWeapon', 'HomingWeapon'];
+        const playerWeaponNames = this.weapons.map(w => w.name);
+        const newWeaponOptions = availableWeaponNames.filter(weaponName => !playerWeaponNames.includes(weaponName));
+        
+        for (const weaponName of newWeaponOptions) {
+            upgradeOptions.push({ 
+                type: 'newWeapon', 
+                weaponName: weaponName,
+                displayName: `New Weapon\n${weaponName}`
+            });
+        }
+        
+        // Randomly select the specified number of upgrades
+        const selectedUpgrades = [];
+        const optionsCopy = [...upgradeOptions];
+        const numToGenerate = Math.min(this.numUpgradeOptionsToGenerate, optionsCopy.length);
+        
+        for (let i = 0; i < numToGenerate; i++) {
+            const randomIndex = Math.floor(Math.random() * optionsCopy.length);
+            selectedUpgrades.push(optionsCopy[randomIndex]);
+            optionsCopy.splice(randomIndex, 1);
+        }
+            
+        const cardWidth = 350;
+        const cardHeight = 600;
+        const spacing = 30;
+        
+        // Create UpgradeCards for each selected upgrade
+        for (const upgrade of selectedUpgrades) {
+            let upgradeConfig;
+            
+            if (upgrade.type === 'player') {
+                upgradeConfig = {
+                    type: 'Stat',
+                    target: upgrade.target,
+                    upgrades: [{ name: upgrade.stat, value: 10 }]
+                };
+            } else if (upgrade.type === 'weapon') {
+                upgradeConfig = {
+                    type: 'Stat',
+                    target: upgrade.target,
+                    upgrades: [{ name: upgrade.stat, value: 5 }]
+                };
+            } else if (upgrade.type === 'newWeapon') {
+                upgradeConfig = {
+                    type: 'AddWeapon',
+                    target: this,
+                    weaponName: upgrade.weaponName
+                };
+            }
+            
+
+            const card = new UpgradeCard(
+                { x: game.CANVAS_WIDTH / 2, y: game.CANVAS_HEIGHT / 2 },
+                { x: cardWidth, y: cardHeight },
+                upgrade.displayName,
+                upgradeConfig,
+                upgradeConfig.target
+            );
+            this.upgradeCards.push(card);
+        }
+
+        // Center all cards horizontally around the center of the screen
+        const totalWidth = (cardWidth + spacing) * this.upgradeCards.length - spacing;
+        const startX = game.CANVAS_WIDTH / 2 - totalWidth / 2;
+
+        for (let i = 0; i < this.upgradeCards.length; i++) {
+            this.upgradeCards[i].pos.x = startX + (cardWidth + spacing) * i + cardWidth / 2;
+            this.upgradeCards[i].pos.y = game.CANVAS_HEIGHT / 2;
+        }
     }
 
     addExp(exp){
@@ -155,17 +274,17 @@ export class Player extends Character{
         super.draw(ctx, camera);
 
         drawCircle(ctx, camera.getPosition(), this.pos, this.size.x/2, "red", true, "black", 1);
-        this.drawXPBar(ctx)
     }
 
-    drawXPBar(ctx){
+    drawXPBar(ctx, camera){        
         let xpBarMargin = 20;
-        let pos = {x: 0, y: 0};
+        let pos = this.pos;
+        let player = this.player;
         let xpBarWidth = game.CANVAS_WIDTH - xpBarMargin * 2;
         let xpBarHeight = 6;
         let xpBarPos = {x: pos.x + xpBarMargin, y: pos.y + xpBarHeight + xpBarMargin/4};
         drawRectangle(ctx, {x: 0, y: 0}, xpBarPos, xpBarWidth, xpBarHeight, "#9e9e9e", {x: 0, y:0}, true, "black");
-        let xpBarHealthWidth = xpBarWidth * (this.XP/this.nextLevelXP);
+        let xpBarHealthWidth = xpBarWidth * (player.XP/player.nextLevelXP);
         drawRectangle(ctx, {x: 0, y: 0}, xpBarPos, xpBarHealthWidth, xpBarHeight, "#d4ad00");        
     }
 }

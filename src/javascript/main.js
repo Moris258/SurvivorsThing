@@ -30,9 +30,9 @@ let playerPos = {x: game.GAME_WIDTH / 2, y: game.GAME_HEIGHT / 2};
 let playerSize = {x: 40, y: 40};
 let player = new Player(playerPos, 100, playerSize, 1)
 player.addWeapon(new AimedWeapon(player, game.inputHandler.cursorWorldPos, 5, 250, 20, 0.2, "#ff9900", 1));
-player.addWeapon(new HomingWeapon(player, 2, 150, 10, 1, 90, "#0044ff", 1));
-player.addWeapon(new AuraWeapon(player, 2, 100, 0.1, "#00ccff99"));
-player.addWeapon(new ExplosiveWeapon(player, 10, 150, 30, 1, 100));
+// player.addWeapon(new HomingWeapon(player, 2, 150, 10, 1, 90, "#0044ff", 1));
+// player.addWeapon(new AuraWeapon(player, 2, 100, 0.1, "#00ccff99"));
+// player.addWeapon(new ExplosiveWeapon(player, 10, 150, 30, 1, 100));
 
 game.setCanvasSize(CANVAS_WIDTH, CANVAS_HEIGHT);
 game.setPlayer(player);

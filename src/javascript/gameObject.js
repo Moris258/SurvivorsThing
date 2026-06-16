@@ -21,10 +21,16 @@ export default class GameObject{
         this.childObjects = [];
         game.addGameObject(this);
         this.drawHitBoxes = true;
+        this.collisions = [];
     }
 
     update(deltaT){
         if(this.checkCollisions){
+            for (const collision of this.collisions) {
+                if(!game.gameObjects.includes(collision)) {
+                    this.collisions.splice(this.collisions.indexOf(collision), 1);
+                }
+            }
             game.gameObjects.slice().forEach(gameObject => {
                 if(gameObject === this) return;
                 if(!gameObject.checkCollisions) return;
@@ -33,6 +39,15 @@ export default class GameObject{
                 let otherPos = gameObject.getCenteredPos();
                 if(checkOverlap(thisPos, this.size, otherPos, gameObject.size, true)){
                     this.onCollision(gameObject);            
+                    if(!this.collisions.includes(gameObject)){
+                        this.onCollisionEnter(gameObject);
+                        this.collisions.push(gameObject);
+                    }
+                } else{
+                    if(this.collisions.includes(gameObject)){
+                        this.collisions.splice(this.collisions.indexOf(gameObject), 1);
+                        this.onCollisionLeave(gameObject);
+                    }
                 }
             }, this);
         }
@@ -70,6 +85,14 @@ export default class GameObject{
     }
 
     onCollision(other){
+
+    }
+
+    onCollisionEnter(other){
+
+    }
+
+    onCollisionLeave(other){
 
     }
 

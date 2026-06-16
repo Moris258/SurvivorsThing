@@ -1,23 +1,33 @@
 export class Stat{
-    constructor(name, value, maxValue = -1) {
+    constructor(name, value, maxValue = -1, upgradeable = true) {
         this.name = name;
         this.value = value;
         this.maxValue = maxValue;
+        this.upgradeable = upgradeable;
     }
 
     getValue(){
         return this.value;
     }
 
+    canUpgrade(){
+        if(!this.upgradeable) return false;
+        if(this.maxValue != -1 && this.value >= this.maxValue) return false;
+        return true;
+    }
+
+    setUpgradeable(value){
+        this.upgradeable = value;
+    }
+
     upgrade(amount){
         //TODO: add logic for inversely scaling stats.
+        if(!this.canUpgrade()) return;
 
         if(this.maxValue == -1){
             this.value += amount;
             return;
         }
-
-        if(this.value >= this.maxValue) return;
 
         this.value += amount;
         this.value = Math.min(this.value, this.maxValue);
@@ -51,6 +61,14 @@ export default class Stats{
      */
     getStatNames(){
         return this.stats.map(value => value.name);
+    }
+
+    /**
+     * 
+     * @returns An array containing the names of all upgradeable stats.
+     */
+    getUpgradeableStatNames(){
+        return this.stats.filter(stat => stat.canUpgrade()).map(stat => stat.name);
     }
     /**
      * @param {String} name Name of the requested stat.

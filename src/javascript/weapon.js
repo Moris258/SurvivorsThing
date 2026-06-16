@@ -16,7 +16,7 @@ export default class Weapon extends GameObject{
     constructor(owner, initialDamage = 10, initialSpeed = 15, initialSize = 2, fireRate = 0.2) {
         super({x: 0, y: 0}, {x: 0, y: 0}, false, owner.tag);
         this.owner = owner;
-
+        this.name = "Weapon";
         this.level = 1;
 
         // Firing state variables
@@ -27,7 +27,7 @@ export default class Weapon extends GameObject{
         this.stats.addStat("Speed", initialSpeed, -1);
         this.stats.addStat("Size", initialSize, -1);
         this.stats.addStat("FireRate", fireRate, -1);
-        this.stats.addStat("Spread", 0.15, -1);
+        this.stats.addStat("Spread", 0.15, -1, false);
     }
 
     /**
@@ -69,9 +69,10 @@ export class AimedWeapon extends Weapon{
      * @param {number} initialSize - Visual size of the weapon model/attachment point.
      * @param {number} fireRate - Time interval (in seconds) between shots.
      */
-    constructor(owner, target, initialDamage = 10, initialSpeed = 250, initialSize = 20, fireRate = 0.2, bulletColor = "yellow", pierce = 1) {
+    constructor(owner, target, initialDamage = 10, initialSpeed = 250, initialSize = 20, fireRate = 1, bulletColor = "yellow", pierce = 1) {
         super(owner, initialDamage, initialSpeed, initialSize, fireRate);
         this.target = target;
+        this.name = "AimedWeapon";
         
         this.bulletColor = bulletColor;
         this.stats.addStat("Pierce", pierce, -1);
@@ -128,19 +129,20 @@ export class HomingWeapon extends Weapon {
      * The bullets rotate toward the target and maintain a specified pierce value.
      * 
      * @param {GameObject} owner - The owner of this weapon.
-     * @param {number} initialDamage - The base damage of the bullet (default: 5).
-     * @param {number} initialSpeed - The speed of the bullet (default: 150).
-     * @param {number} initialSize - The size of the bullet (default: 2).
+     * @param {number} initialDamage - The base damage of the bullet (default: 2).
+     * @param {number} initialSpeed - The speed of the bullet (default: 100).
+     * @param {number} initialSize - The size of the bullet (default: 10).
      * @param {number} fireRate - The rate at which the weapon fires (default: 1).
-     * @param {number} rotationSpeed - The rotation speed of the bullet (default: 20).
+     * @param {number} rotationSpeed - The rotation speed of the bullet (default: 75).
      * @param {string} bulletColor - The color of the bullet (default: "yellow").
      * @param {number} pierce - The number of enemies the bullet can pierce (default: 1).
      */
 
-    constructor(owner, initialDamage = 5, initialSpeed = 150, initialSize = 2, fireRate = 1, rotationSpeed = 20, bulletColor = "yellow", pierce = 1) {
+    constructor(owner, initialDamage = 2, initialSpeed = 100, initialSize = 10, fireRate = 1, rotationSpeed = 75, bulletColor = "yellow", pierce = 1) {
         super(owner, initialDamage, initialSpeed, initialSize, fireRate);
         this.bulletColor = bulletColor;
         this.closestTarget = null;
+        this.name = "HomingWeapon";
 
         this.stats.addStat("Pierce", pierce, -1);
         this.stats.addStat("RotationSpeed", rotationSpeed, -1);
@@ -188,14 +190,16 @@ export class AuraWeapon extends Weapon {
     /**
      * Creates a new AuraWeapon instance.
      * @param {GameObject} owner - The owner of this weapon.
-     * @param {number} initialDamage - The initial damage per tick (default: 10).
-     * @param {number} initialRadius - The initial radius of the aura (default: 60).
-     * @param {number} fireRate - The rate at which the weapon fires (default: 2).
+     * @param {number} initialDamage - The initial damage per tick (default: 2).
+     * @param {number} initialRadius - The initial radius of the aura (default: 100).
+     * @param {number} fireRate - The rate at which the weapon fires (default: 0.5).
      * @param {string} auraColor - The color of the aura (default: '#ffff0099').
      */
-    constructor(owner, initialDamage = 10, initialRadius = 60, fireRate = 2, auraColor = "#ffff0099") {
+    constructor(owner, initialDamage = 2, initialRadius = 100, fireRate = 0.5, auraColor = "#ffff0099") {
         super(owner, initialDamage, 0, initialRadius, fireRate);
+        this.stats.getStat("Speed").setUpgradeable(false);
         this.auraColor = auraColor;
+        this.name = "AuraWeapon";
     }
 
     update(deltaT){
@@ -263,11 +267,12 @@ export class ExplosiveWeapon extends Weapon {
      * @param {number} explosionRadius - Radius of explosion effect.
      * @param {string} bulletColor - Color of the bullet.
      */
-    constructor(owner, initialDamage = 15, initialSpeed = 12, initialSize = 3, fireRate = 0.5, explosionRadius = 80, bulletColor = "#ff0000") {
+    constructor(owner, initialDamage = 10, initialSpeed = 150, initialSize = 30, fireRate = 2, explosionRadius = 50, bulletColor = "#ff0000") {
         super(owner, initialDamage, initialSpeed, initialSize, fireRate);
         this.stats.addStat("ExplosionRadius", explosionRadius, -1);
         this.closestTarget = null;
         this.bulletColor = bulletColor;
+        this.name = "ExplosiveWeapon";
     }
 
     update(deltaT) {
