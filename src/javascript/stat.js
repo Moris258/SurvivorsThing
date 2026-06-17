@@ -1,9 +1,10 @@
 export class Stat{
-    constructor(name, value, maxValue = -1, upgradeable = true) {
+    constructor(name, value, maxValue = -1, scaling = 1, upgradeable = true) {
         this.name = name;
         this.value = value;
         this.maxValue = maxValue;
         this.upgradeable = upgradeable;
+        this.scaling = scaling;
     }
 
     getValue(){
@@ -25,11 +26,11 @@ export class Stat{
         if(!this.canUpgrade()) return;
 
         if(this.maxValue == -1){
-            this.value += amount;
+            this.value += amount * this.scaling;
             return;
         }
 
-        this.value += amount;
+        this.value += amount * this.scaling;
         this.value = Math.min(this.value, this.maxValue);
     }
 }
@@ -45,14 +46,15 @@ export default class Stats{
      * @param {String} name - The name of the stat to add.
      * @param {Number} value - The initial value of the stat.
      * @param {Number} maxValue - The maximum value the stat can reach. If -1, there is no maximum.
+     * @param {Number} scaling - Sets the number that multiplies any upgrades of this stat.
      * @throws {Error} If a stat with the given name already exists.
      */
-    addStat(name, value, maxValue = -1){
+    addStat(name, value, maxValue = -1, scaling = 1, upgradeable = true){
         if(this.getStat(name) != undefined){
             throw new Error("Stat already exists. Adding " + name);            
             return;
         }
-        this.stats.push(new Stat(name, value, maxValue));
+        this.stats.push(new Stat(name, value, maxValue, scaling, upgradeable));
     }
 
     /**

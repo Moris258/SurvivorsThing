@@ -1,10 +1,11 @@
 import Camera from "./camera.js";
 import InputHandler from "./inputHandler.js";
-import { Player, Enemy, Bruiser, Tank, Fighter, Mage, Dog } from "./character.js";
 import { checkOverlap, drawRectangle, drawText } from "./utility.js";
 import EnemySpawner from "./enemySpawner.js";
 import GameObject from "./gameObject.js";
 import UIObject from "./UIObject.js";
+import Character from "./character.js";
+import Event from "./event.js";
 
 export default class Game{
     constructor(GAME_WIDTH = 800, GAME_HEIGHT = 600, CANVAS_WIDTH = 800, CANVAS_HEIGHT = 800) {
@@ -15,6 +16,13 @@ export default class Game{
         this.gameObjects = [];
         this.UIObjects = [];
         this.camera = new Camera();
+
+        //Events
+        this.onCharacterDied = new Event();
+        this.onCharacterHit = new Event();
+        this.onEnemySpawned = new Event();
+
+
         this.inputHandler = null;
         this.paused = false;
         this.gameEnd = false;
@@ -33,7 +41,7 @@ export default class Game{
     }
 
     addSpawner(){
-        new EnemySpawner({x: game.GAME_WIDTH / 2 + 100, y: game.GAME_HEIGHT / 2 + 100}, 1)
+        new EnemySpawner({x: game.GAME_WIDTH / 2 + 100, y: game.GAME_HEIGHT / 2 + 100}, 1);
     }
 
     endGame(){
@@ -111,6 +119,8 @@ export default class Game{
         }
 
         if(!this.gameObjects.includes(object)) return;
+
+        if(object instanceof Character) this.onCharacterDied.callEvents({target: object});
         this.gameObjects.splice(this.gameObjects.indexOf(object), 1);
     }
 

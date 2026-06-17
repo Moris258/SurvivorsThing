@@ -1,8 +1,8 @@
 import { game } from "./game.js";
-import GameObject from "./gameObject.js";
 import { checkOverlap, normalizeVector } from "./utility.js";
+import GameObject from "./gameObject.js";
 
-export default class MoveableObject extends GameObject{
+export default class MoveableObject extends GameObject {
     /**
      * Parent class for all moveable objects. Contains methods for moving GameObjects every frame.
      * @param {{x: number, y: number}} pos - position of the GameObject.

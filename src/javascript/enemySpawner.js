@@ -67,5 +67,7 @@ export default class EnemySpawner extends GameObject{
         } else {
              console.warn("Could not spawn enemy: Game object manager is not available.");
         }
+
+        game.onEnemySpawned.callEvents({target: newEnemy});
     }
 }

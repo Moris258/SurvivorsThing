@@ -1,12 +1,20 @@
-import { CavesBackground, DesertBackground, ForestBackground, MeadowsBackground } from "./background.js";
+import { CavesBackground } from "./backgrounds/caveBackground.js";
+import { DesertBackground } from "./backgrounds/desertBackground.js";
+import { ForestBackground } from "./backgrounds/forestBackground.js";
+import { MeadowsBackground } from "./backgrounds/meadowsBackground.js";
 import Camera from "./camera.js";
 import { Player } from "./character.js";
 import { game } from "./game.js";
 import GameObject from "./gameObject.js";
 import InputHandler from "./inputHandler.js";
+import ParticleSystem, { Particle } from "./particleSystem.js";
 import { calculateAngleBetweenVectors, calculateRotationDegrees, drawRectangle, rotateVector } from "./utility.js";
 import Weapon, { AimedWeapon, AuraWeapon, ExplosiveWeapon, HomingWeapon } from "./weapon.js";
-import { DarknessWeatherEffect, LightningWeatherEffect, RainWeatherEffect, SnowWeatherEffect } from "./weatherEffect.js";
+import { DarknessWeatherEffect } from "./weatherEffects/darknessWeatherEffect.js";
+import { LightningWeatherEffect } from "./weatherEffects/lightningWeatherEffect.js";
+import { RainWeatherEffect } from "./weatherEffects/rainWeatherEffect.js";
+import SandstormWeatherEffect from "./weatherEffects/sandstormWeatherEffect.js";
+import { SnowWeatherEffect } from "./weatherEffects/snowWeatherEffect.js";
 
 // Get the canvas element and its context
 const canvas = document.getElementById('myCanvas');
@@ -19,11 +27,14 @@ const camera = game.camera;
 
 const CANVAS_WIDTH = 1920;
 const CANVAS_HEIGHT = 1080;
+camera.setViewport({x: CANVAS_WIDTH, y: CANVAS_HEIGHT});
 game.setGameSize(CANVAS_WIDTH * 4, CANVAS_HEIGHT * 4);
+game.setCanvasSize(CANVAS_WIDTH, CANVAS_HEIGHT);
 game.setInputHandler(new InputHandler(camera));
 
-let background = new ForestBackground(game.GAME_WIDTH, game.GAME_HEIGHT);
-background.addWeatherEffect(new SnowWeatherEffect(CANVAS_WIDTH, CANVAS_WIDTH, 0.7));
+
+let background = new CavesBackground(game.GAME_WIDTH, game.GAME_HEIGHT);
+background.addWeatherEffect(new DarknessWeatherEffect(CANVAS_WIDTH, CANVAS_WIDTH, 0.5));
 game.setBackground(background);
 
 let playerPos = {x: game.GAME_WIDTH / 2, y: game.GAME_HEIGHT / 2};
@@ -34,7 +45,9 @@ player.addWeapon(new AimedWeapon(player, game.inputHandler.cursorWorldPos, 5, 25
 // player.addWeapon(new AuraWeapon(player, 2, 100, 0.1, "#00ccff99"));
 // player.addWeapon(new ExplosiveWeapon(player, 10, 150, 30, 1, 100));
 
-game.setCanvasSize(CANVAS_WIDTH, CANVAS_HEIGHT);
+const fireEffect = new ParticleSystem(player.pos, {x: 5, y: 5}, 30, 60, "orange", 2, {x: 0, y: -1}, 0.3, Particle);
+fireEffect.start();
+
 game.setPlayer(player);
 game.addSpawner();
 

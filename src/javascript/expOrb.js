@@ -1,4 +1,4 @@
-import { Player } from "./character.js";
+import { Player } from "./character.js  ";
 import { game } from "./game.js";
 import MoveableObject from "./moveableObject.js";
 import { drawCircle, lightenColor, moveTowards, pointsDistance, randomColorHex } from "./utility.js";

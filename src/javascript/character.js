@@ -15,7 +15,7 @@ export default class Character extends MoveableObject{
         this.HP = HP;
         this.invincibilitySeconds = 0;
         this.invincibility = 0;
-
+        this.onHit = new Event();
     }
 
     takeDamage(damage){        
@@ -23,6 +23,8 @@ export default class Character extends MoveableObject{
 
         
         this.HP -= damage;
+        this.onHit.callEvents({target: this, damage: damage});
+        game.onCharacterHit.callEvents({target: this, damage: damage});
         this.invincibility = this.invincibilitySeconds;
         if(this.HP <= 0)
             this.died();
@@ -44,6 +46,10 @@ export default class Character extends MoveableObject{
         this.drawHPBar(ctx, camera);
     }
 
+    getMaxHP(){
+        return this.MAX_HP;
+    }
+
     died(){
         this.remove()
     }
@@ -60,7 +66,7 @@ export default class Character extends MoveableObject{
         let hpBarHeight = 6;
         let hpBarPos = {x: pos.x + hpBarMargin, y: pos.y + this.size.y + hpBarHeight + hpBarMarginBottom};
         drawRectangle(ctx, camera.getPosition(), hpBarPos, hpBarWidth, hpBarHeight, "red", {x: 0, y:0}, true, "black");
-        let hpBarHealthWidth = hpBarWidth * (this.HP/this.MAX_HP);
+        let hpBarHealthWidth = hpBarWidth * (this.HP/ this.getMaxHP());
         drawRectangle(ctx, camera.getPosition(), hpBarPos, hpBarHealthWidth, hpBarHeight, "green");
     }
 }
@@ -77,6 +83,7 @@ export class Player extends Character{
         this.invincibilitySeconds = 1;
 
         this.stats = new Stats();
+        this.stats.addStat("MaxHP", 100, -1);
         this.stats.addStat("Speed", 200, -1);
         this.stats.addStat("Defense", 0, -1);
         this.stats.addStat("XPAttractionRange", 100, -1);
@@ -102,6 +109,8 @@ export class Player extends Character{
         XPBar.player = this;
 
         this.upgradeCards = [];        
+        //TODO: handle HP upgrades properly.
+    
     }
 
     onLevelUpHandler(args){
@@ -123,6 +132,8 @@ export class Player extends Character{
     }
 
     generateUpgradeCards() {
+        //TODO: scale upgrade numbers
+
         const upgradeOptions = [];
         
         // Add player stat upgrade options
@@ -286,6 +297,10 @@ export class Player extends Character{
         drawRectangle(ctx, {x: 0, y: 0}, xpBarPos, xpBarWidth, xpBarHeight, "#9e9e9e", {x: 0, y:0}, true, "black");
         let xpBarHealthWidth = xpBarWidth * (player.XP/player.nextLevelXP);
         drawRectangle(ctx, {x: 0, y: 0}, xpBarPos, xpBarHealthWidth, xpBarHeight, "#d4ad00");        
+    }
+
+    getMaxHP(){
+        return this.stats.getStatValue("MaxHP");
     }
 }
 

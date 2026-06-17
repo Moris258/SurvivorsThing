@@ -1,5 +1,6 @@
 import Bullet, { ExplosiveBullet, HomingBullet } from './bullet.js'; // Assuming Bullet class is exported here
-import Character, { Enemy } from './character.js';
+import Character from './character.js';
+import Event from './event.js';
 import { game } from './game.js';
 import GameObject from './gameObject.js';
 import Stats from './stat.js';
@@ -20,14 +21,16 @@ export default class Weapon extends GameObject{
         this.level = 1;
 
         // Firing state variables
-        this.lastFireTime = 0;
+        this.lastFireTime = Date.now() / 1000;
         
+        this.onWeaponFired = new Event();
+
         this.stats = new Stats();
         this.stats.addStat("Damage", initialDamage, -1);
         this.stats.addStat("Speed", initialSpeed, -1);
         this.stats.addStat("Size", initialSize, -1);
-        this.stats.addStat("FireRate", fireRate, -1);
-        this.stats.addStat("Spread", 0.15, -1, false);
+        this.stats.addStat("FireRate", fireRate, -1, -1);
+        this.stats.addStat("Spread", 0.15, -1, 1, false);
     }
 
     /**
@@ -45,7 +48,7 @@ export default class Weapon extends GameObject{
     }
 
     shoot() {    
-
+        this.onWeaponFired.callEvents({target: this});
     }
 
     upgrade(upgradeLevel = 1) {
@@ -100,6 +103,8 @@ export class AimedWeapon extends Weapon{
             this.stats.getStatValue("Pierce")
         );
         bullet.tag = this.owner.tag;
+
+        super.shoot();
     }
 
 
@@ -179,6 +184,8 @@ export class HomingWeapon extends Weapon {
             );
             bullet.tag = this.owner.tag;
         }
+
+        super.shoot();
     }
 }
 
@@ -246,6 +253,8 @@ export class AuraWeapon extends Weapon {
                 target.takeDamage(this.stats.getStatValue("Damage"));
             }
         });
+
+        super.shoot();
     }
 
     upgrade(upgradeLevel){
@@ -303,6 +312,8 @@ export class ExplosiveWeapon extends Weapon {
             this.bulletColor,
             this.owner.tag
         );
+        
+        super.shoot();
     }
 
     upgrade(upgradeLevel = 1) {

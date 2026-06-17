@@ -112,11 +112,7 @@ export default class GameObject{
         this.pos.x = newPos.x;
         this.pos.y = newPos.y;
     }
-
     
-    /**
-     * Find the closest enemy to the weapon owner.
-     */
     static findClosestTarget(source) {
         if(!(source instanceof GameObject)) return null;
 

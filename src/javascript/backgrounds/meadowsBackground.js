@@ -1,0 +1,137 @@
+import { drawCircle, drawRectangle, lightenColor } from "../utility.js";
+import Background from "./background.js";
+
+
+// Meadows-specific background implementation
+export class MeadowsBackground extends Background {
+    static FLOWER_COLORS = ["#FF6BAA", "#FFD35C", "#F4A261", "#D46B9A", "#A9D973"];
+    static FLOWER_CENTER_COLORS = ["#FFF3A3", "#F7E176", "#FFE09C"];
+    static STEM_COLOR = "#2F6A2D";
+    static ROCK_COLORS = ["#8B4513", "#696969", "#4B4C48"];
+
+    constructor(width, height) {
+        super(width, height);
+    }
+
+    setSize(width, height) {
+        super.setSize(width, height);
+        this.grassColor = "#4A8B2F";
+        this.patchColor = "#6EB94E";
+        let patchScale = 100000;
+        let flowerScale = 60000;
+        let rockScale = 500000;
+        // Initialize patches, flowers, and rocks
+        this.patches = this.generatePatches((width*height)/patchScale);
+        this.flowers = this.generateFlowers((width*height)/flowerScale);
+        this.rocks = this.generateRocks((width*height)/rockScale);
+    }
+
+    generatePatches(count) {
+        const patches = [];
+
+        for (let i = 0; i < count; i++) {
+            const patchWidth = this.randomInt(this.width * 0.12, this.width * 0.30);
+            const patchHeight = this.randomInt(this.height * 0.08, this.height * 0.18);
+            const x = this.randomInt(0, Math.max(0, this.width - patchWidth));
+            const y = this.randomInt(0, Math.max(0, this.height - patchHeight));
+            const color = lightenColor(this.patchColor, this.randomInt(6, 18));
+
+            patches.push({ x, y, width: patchWidth, height: patchHeight, color });
+        }
+
+        return patches;
+    }
+
+    generateFlowers(count) {
+        const flowers = [];
+
+        for (let i = 0; i < count; i++) {
+            const center = {
+                x: this.randomInt(20, this.width - 20),
+                y: this.randomInt(20, this.height - 20)
+            };
+            const petalRadius = this.randomInt(4, 8);
+            const centerRadius = Math.max(3, Math.round(petalRadius * 0.45));
+            const stemHeight = this.randomInt(petalRadius * 4, petalRadius * 7);
+            const stemWidth = Math.max(2, Math.round(petalRadius * 0.35));
+            const petalColor = MeadowsBackground.FLOWER_COLORS[this.randomInt(0, MeadowsBackground.FLOWER_COLORS.length)];
+            const centerColor = MeadowsBackground.FLOWER_CENTER_COLORS[this.randomInt(0, MeadowsBackground.FLOWER_CENTER_COLORS.length)];
+            const petalCount = this.randomInt(4, 7);
+            const angleOffset = Math.random() * Math.PI * 2;
+
+            flowers.push({
+                pos: center,
+                petalRadius,
+                centerRadius,
+                stemHeight,
+                stemWidth,
+                petalColor,
+                centerColor,
+                petalCount,
+                angleOffset
+            });
+        }
+
+        return flowers;
+    }
+
+    generateRocks(count) {
+        const rocks = [];
+
+        for (let i = 0; i < count; i++) {
+            // Rocks are generally placed on the ground level
+            const x = this.randomInt(20, Math.max(0, this.width - 20));
+            const y = this.randomInt(20, this.height -20); // Constrain Y to lower part of background
+            const width = this.randomInt(15, 40);
+            const height = this.randomInt(10, 30);
+            // Pick a random rock color
+            const color = MeadowsBackground.ROCK_COLORS[this.randomInt(0, MeadowsBackground.ROCK_COLORS.length)];
+
+            rocks.push({ x, y, width: width, height: height, color });
+        }
+
+        return rocks;
+    }
+
+    draw(ctx, camera) {
+        const cameraPos = camera && typeof camera.getPosition === "function" ? camera.getPosition() : camera;
+
+        // 1. Draw Grass/Background base
+        drawRectangle(ctx, cameraPos, { x: 0, y: 0 }, this.width, this.height, this.grassColor);
+
+        // 2. Draw patches (e.g., bushes)
+        for (const patch of this.patches) {
+            drawRectangle(ctx, cameraPos, { x: patch.x, y: patch.y }, patch.width, patch.height, patch.color, { x: 0, y: 0 }, false);
+        }
+
+        // 3. Draw rocks (underneath other elements)
+        for (const rock of this.rocks) {
+            drawRectangle(ctx, cameraPos, { x: rock.x, y: rock.y }, rock.width, rock.height, rock.color);
+        }
+
+        // 4. Draw flowers
+        for (const flower of this.flowers) {
+            this.drawFlower(ctx, cameraPos, flower);
+        }
+    }
+
+    drawFlower(ctx, cameraPos, flower) {
+        const stemX = flower.pos.x - flower.stemWidth / 2;
+        // Adjust start Y to account for potential rock/patch coverage if necessary, but keeping original logic for now.
+        const stemY = flower.pos.y; 
+        drawRectangle(ctx, cameraPos, { x: stemX, y: stemY }, flower.stemWidth, flower.stemHeight, MeadowsBackground.STEM_COLOR);
+
+        const center = { x: flower.pos.x, y: flower.pos.y };
+        const ringRadius = flower.petalRadius * 2.2;
+
+        for (let i = 0; i < flower.petalCount; i++) {
+            const angle = flower.angleOffset + (i / flower.petalCount) * Math.PI * 2;
+            const petalX = center.x + Math.cos(angle) * ringRadius;
+            const petalY = center.y + Math.sin(angle) * ringRadius;
+
+            drawCircle(ctx, cameraPos, { x: petalX, y: petalY }, flower.petalRadius, flower.petalColor);
+        }
+
+        drawCircle(ctx, cameraPos, center, flower.centerRadius, flower.centerColor, true, "#FFFFFF", 1);
+    }
+}
