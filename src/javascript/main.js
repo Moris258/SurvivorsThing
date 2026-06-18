@@ -7,9 +7,11 @@ import { Player } from "./character.js";
 import { game } from "./game.js";
 import GameObject from "./gameObject.js";
 import InputHandler from "./inputHandler.js";
+import InteractableObject from "./interactableObject.js";
 import ParticleSystem, { Particle } from "./particleSystem.js";
-import { calculateAngleBetweenVectors, calculateRotationDegrees, drawRectangle, rotateVector } from "./utility.js";
-import Weapon, { AimedWeapon, AuraWeapon, ExplosiveWeapon, HomingWeapon } from "./weapon.js";
+import { calculateAngleBetweenVectors, calculateRotationDegrees, drawRectangle, randomInt, rotateVector } from "./utility.js";
+import AimedWeapon from "./weapons/aimedWeapon.js";
+import LightningWeapon from "./weapons/lightningWeapon.js";
 import { DarknessWeatherEffect } from "./weatherEffects/darknessWeatherEffect.js";
 import { LightningWeatherEffect } from "./weatherEffects/lightningWeatherEffect.js";
 import { RainWeatherEffect } from "./weatherEffects/rainWeatherEffect.js";
@@ -40,13 +42,18 @@ game.setBackground(background);
 let playerPos = {x: game.GAME_WIDTH / 2, y: game.GAME_HEIGHT / 2};
 let playerSize = {x: 40, y: 40};
 let player = new Player(playerPos, 100, playerSize, 1)
-player.addWeapon(new AimedWeapon(player, game.inputHandler.cursorWorldPos, 5, 250, 20, 0.2, "#ff9900", 1));
+player.addWeapon(new AimedWeapon(player, game.inputHandler.cursorWorldPos, 5, 250, 20, 5, "#ff9900", 1));
+// player.addWeapon(new LightningWeapon(player));
 // player.addWeapon(new HomingWeapon(player, 2, 150, 10, 1, 90, "#0044ff", 1));
 // player.addWeapon(new AuraWeapon(player, 2, 100, 0.1, "#00ccff99"));
 // player.addWeapon(new ExplosiveWeapon(player, 10, 150, 30, 1, 100));
 
 const fireEffect = new ParticleSystem(player.pos, {x: 5, y: 5}, 30, 60, "orange", 2, {x: 0, y: -1}, 0.3, Particle);
 fireEffect.start();
+
+const interactable1 = new InteractableObject({x: playerPos.x - 20, y: playerPos.y - 20}, {x: 40, y: 40});
+const interactable2 = new InteractableObject({x: playerPos.x - 50, y: playerPos.y - 50}, {x: 40, y: 40});
+
 
 game.setPlayer(player);
 game.addSpawner();
@@ -72,7 +79,7 @@ function animationLoop(currentTime) {
 
     ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
     game.update(deltaT/1000);
-    game.draw(ctx, camera);
+    game.draw(ctx, camera);   
 
     // Request the next frame
     requestAnimationFrame(animationLoop);

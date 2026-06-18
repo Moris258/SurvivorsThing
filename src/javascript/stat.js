@@ -2,13 +2,19 @@ export class Stat{
     constructor(name, value, maxValue = -1, scaling = 1, upgradeable = true) {
         this.name = name;
         this.value = value;
+        this.buffValue = 0;
         this.maxValue = maxValue;
         this.upgradeable = upgradeable;
         this.scaling = scaling;
+        this.multiplier = 1;
     }
 
     getValue(){
-        return this.value;
+        return (this.value + this.buffValue) * this.multiplier;
+    }
+
+    getBufflessValue(){
+        return this.value * this.multiplier;
     }
 
     canUpgrade(){
@@ -21,17 +27,36 @@ export class Stat{
         this.upgradeable = value;
     }
 
+    addBuffValue(amount){
+        this.buffValue += amount;
+    }
+
+    upgradeMultiplier(amount){
+        this.multiplier += amount;
+        this.multiplier = Math.max(0.05, this.multiplier);
+        console.log(amount);
+        
+        
+    }
+
     upgrade(amount){
         //TODO: add logic for inversely scaling stats.
         if(!this.canUpgrade()) return;
+        amount = Math.floor(amount * this.scaling * 100) / 100;
 
         if(this.maxValue == -1){
-            this.value += amount * this.scaling;
+            this.value += amount;
             return;
         }
+        if(this.scaling >= 0){
+            this.value += amount;
+            this.value = Math.min(this.value, this.maxValue);
+        }
+        else{
+            this.value += amount;
+            this.value = Math.max(this.value, this.maxValue);
+        }
 
-        this.value += amount * this.scaling;
-        this.value = Math.min(this.value, this.maxValue);
     }
 }
 

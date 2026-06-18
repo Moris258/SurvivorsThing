@@ -1,36 +1,16 @@
-import { Player } from "./character.js  ";
-import { game } from "./game.js";
-import MoveableObject from "./moveableObject.js";
-import { drawCircle, lightenColor, moveTowards, pointsDistance, randomColorHex } from "./utility.js";
+import AttractableObject from "./attractableObject.js";
+import { Player } from "./character.js";
+import { drawCircle, lightenColor, randomColorHex } from "./utility.js";
 
-export default class ExpOrb extends MoveableObject{
+export default class ExpOrb extends AttractableObject{
     /**
      *
      */
     constructor(pos, size, value = 5) {
-        super(pos, size, true, 0);
+        super(pos, size);
         this.value  = value;
         this.color = randomColorHex();
-        this.maxSpeed = 500;
         this.tag == "XP";
-        
-    }
-
-    update(deltaT){
-        super.update(deltaT);
-        const player = game.player;
-        let distanceToPlayer = pointsDistance(player.getPosition(), this.getPosition());
-        let XPAttractionRange = player.stats.getStatValue("XPAttractionRange");
-        
-
-        if(distanceToPlayer < XPAttractionRange){
-            this.speed = (1 - distanceToPlayer/XPAttractionRange) * this.maxSpeed;
-            
-            this.setMoveDirection(moveTowards(player.getPosition(), this.getPosition()));
-        }
-        else{
-            this.speed = 0;
-        }
     }
 
     draw(ctx, camera){

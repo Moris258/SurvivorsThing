@@ -2,7 +2,11 @@ import { Player } from './character.js';
 import { game } from './game.js';
 import GameObject from './gameObject.js'
 import { drawRectangle, drawText } from './utility.js';
-import { AimedWeapon, AuraWeapon, ExplosiveWeapon, HomingWeapon } from './weapon.js';
+import AimedWeapon from './weapons/aimedWeapon.js';
+import AuraWeapon from './weapons/auraWeapon.js';
+import ExplosiveWeapon from './weapons/explosiveWeapon.js';
+import HomingWeapon from './weapons/homingWeapon.js';
+import LightningWeapon from './weapons/lightningWeapon.js';
 
 export default class UIObject extends GameObject{
     constructor(pos, size) {
@@ -36,7 +40,13 @@ export class UpgradeCard extends UIObject{
 
     applyUpgrades(){
         switch (this.upgradesArgs.type) {
-            case "Stat":
+            case "StatMultiplier":
+                for (const upgrade of this.upgradesArgs.upgrades) {
+                    let stat = this.toUpgrade.stats.getStat(upgrade.name);
+                    stat.upgradeMultiplier(upgrade.value);
+                }
+                break;
+            case "StatBase":
                 for (const upgrade of this.upgradesArgs.upgrades) {
                     let stat = this.toUpgrade.stats.getStat(upgrade.name);
                     stat.upgrade(upgrade.value);
@@ -62,6 +72,9 @@ export class UpgradeCard extends UIObject{
                         break;
                     case "HomingWeapon":
                         weapon = new HomingWeapon(this.toUpgrade);
+                        break;
+                    case "LightningWeapon":
+                        weapon = new LightningWeapon(this.toUpgrade);
                         break;
                 }
 
@@ -90,19 +103,45 @@ export class UpgradeCard extends UIObject{
         pos.y += textMargin;
 
         switch(this.upgradesArgs.type){
-            case "Stat":
+            case "StatMultiplier":
                 {
-                    let size = 30;
-                    let textGap = 50;
+                    const size = 30;
+                    const subtextSize = 22;
+                    const textGap = 50;
+                    const subtextGap = 30;
                     pos.y += size;
                     for (const upgrade of this.upgradesArgs.upgrades) {
-                        drawText(ctx, {x: 0, y: 0}, pos, upgrade.name + ": " + upgrade.value, "#ffffff", size, false, "#fff", "left");
+                        const stat = this.toUpgrade.stats.getStat(upgrade.name)
+                        const valueToDisplay = Math.floor(upgrade.value * 10000)/100;
+                        drawText(ctx, {x: 0, y: 0}, pos, upgrade.name + ": " + valueToDisplay + "%", "#ffffff", size, false, "#fff", "left");
+                        pos.y += subtextGap;
+                        drawText(ctx, {x: 0, y: 0}, pos, "Current value: " + stat.getBufflessValue(), "#ffffff", subtextSize, false, "#fff", "left");
+                        pos.y += textGap;
+                    }
+
+                }
+                break;
+
+            case "StatBase":
+                {
+                    const size = 30;
+                    const subtextSize = 22;
+                    const textGap = 50;
+                    const subtextGap = 30;
+                    pos.y += size;
+                    for (const upgrade of this.upgradesArgs.upgrades) {
+                        const stat = this.toUpgrade.stats.getStat(upgrade.name)
+                        const valueToDisplay = Math.floor(upgrade.value * stat.scaling * 100) / 100;
+                        drawText(ctx, {x: 0, y: 0}, pos, upgrade.name + ": +" + valueToDisplay, "#ffffff", size, false, "#fff", "left");
+                        pos.y += subtextGap;
+                        drawText(ctx, {x: 0, y: 0}, pos, "Current value: " + stat.getBufflessValue(), "#ffffff", subtextSize, false, "#fff", "left");
                         pos.y += textGap;
                     }
 
                 }
                 break;
             case "AddWeapon":
+                //TODO: Add weapon description to every weapon and display it here.
                 break;
             default:
                 break;

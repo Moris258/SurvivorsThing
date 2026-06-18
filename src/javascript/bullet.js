@@ -2,7 +2,7 @@ import Character from "./character.js";
 import { game } from "./game.js";
 import GameObject from "./gameObject.js";
 import MoveableObject from "./moveableObject.js";
-import { calculateRotationDegrees, checkCircleRectangleOverlap, drawCircle, moveTowards, pointsDistance, rotateVector } from "./utility.js";
+import { calculateRotationDegrees, checkCircleRectangleOverlap, drawCircle, drawRectangle, moveTowards, pointsDistance, rotateVector } from "./utility.js";
 
 export default class Bullet extends MoveableObject{
     constructor(pos, size, speed, dir, damage = 10, lifespan = 10, color = "yellow", pierce = 1) {
@@ -30,7 +30,7 @@ export default class Bullet extends MoveableObject{
         if ((other instanceof Character && other.tag != this.tag)) {            
             this.pierce -= 1;
             other.takeDamage(this.damage);
-            if(this.pierce <= 0)
+            if(Math.floor(this.pierce) <= 0)
                 this.remove();
         }
         else if(other.isRigid()){
@@ -143,5 +143,81 @@ export class ExplosiveBullet extends Bullet {
                 enemy.takeDamage(finalDamage);
             }
         });
+    }
+}
+
+/**
+ * LightningBolt is a projectile that travels to a target location and strikes with AoE damage after a delay.
+ */
+export class LightningBolt extends GameObject {
+    /**
+     * @param {number} startX - Starting X position.
+     * @param {number} startY - Starting Y position.
+     * @param {number} damage - Damage dealt in the strike area.
+     * @param {number} strikeRadius - Radius of the strike damage area.
+     * @param {string} ownerTag - Tag of the weapon owner.
+     * @param {number} delayTime - Time before striking (in seconds).
+     * @param {string} color - Color of the lightning effect.
+     */
+    constructor(pos, damage = 20, strikeRadius = 80, ownerTag = "", delayTime = 0.5, color = "#ffff00") {
+        super(pos, {x: strikeRadius, y: strikeRadius}, false, ownerTag);
+        this.damage = damage;
+        this.strikeRadius = strikeRadius;
+        this.delayTime = delayTime;
+        this.color = color;
+    }
+
+    update(deltaT) {
+        this.delayTime -= deltaT;
+
+        if(this.delayTime <= 0){
+            this.remove();
+        }
+    }
+
+    drawStrike(){
+        let lightningEffect = new GameObject(this.pos, {x: this.strikeRadius, y: this.strikeRadius}, false, "");
+        lightningEffect.lifespan = 1;
+        lightningEffect.maxLifespan = 1;
+        lightningEffect.draw = (ctx, camera) => {
+            const color = this.color + Math.floor((lightningEffect.lifespan/lightningEffect.maxLifespan) * 255).toString(16).padStart(2, "0");
+
+            drawCircle(ctx, camera.getPosition(), lightningEffect.getPosition(), lightningEffect.size.x/2, color);
+        }
+        lightningEffect.update = (deltaT) => {
+            lightningEffect.lifespan -= deltaT;
+            if(lightningEffect.lifespan <= 0) lightningEffect.remove();
+        }
+    }
+
+    remove(){
+        this.strike();
+        this.drawStrike();
+        super.remove();
+    }
+
+    /**
+     * Create a lightning strike effect and damage all nearby enemies.
+     */
+    strike() {
+        const nearbyEnemies = game.gameObjects.filter(value => {
+            return value instanceof Character && value.tag != this.tag;
+        });
+
+        nearbyEnemies.forEach(enemy => {
+            const distance = pointsDistance(this.pos, enemy.getPosition());
+            if (checkCircleRectangleOverlap(this.pos, this.strikeRadius, enemy.pos, enemy.size)) {
+                // Apply reduced damage based on distance from strike center
+                const damageMultiplier = 1 - (distance / this.strikeRadius) * 0.3; // 30% damage reduction at max range
+                const finalDamage = this.damage * damageMultiplier;
+                enemy.takeDamage(finalDamage);
+            }
+        });
+    }
+
+    draw(ctx, camera) {
+        const screenPos = camera.getPosition();
+        
+        drawCircle(ctx, screenPos, this.pos, this.size.x/2, "#00000000", true, this.color, 5);
     }
 }

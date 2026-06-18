@@ -67,8 +67,7 @@ export default class MoveableObject extends GameObject {
     move(movement){
         if(!this.moveable) return;
         if(isNaN(movement.x) || isNaN(movement.y)) {
-            console.error("Tried to move GameObject with invalid values.");
-                  
+            console.error("Tried to move GameObject with invalid values.");                  
             return;
         }
 
