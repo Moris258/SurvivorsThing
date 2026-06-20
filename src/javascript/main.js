@@ -9,6 +9,7 @@ import GameObject from "./gameObject.js";
 import InputHandler from "./inputHandler.js";
 import InteractableObject from "./interactableObject.js";
 import ParticleSystem, { Particle } from "./particleSystem.js";
+import GameTimer from "./UIObjects/gameTimer.js";
 import { calculateAngleBetweenVectors, calculateRotationDegrees, drawRectangle, randomInt, rotateVector } from "./utility.js";
 import AimedWeapon from "./weapons/aimedWeapon.js";
 import LightningWeapon from "./weapons/lightningWeapon.js";
@@ -35,9 +36,12 @@ game.setCanvasSize(CANVAS_WIDTH, CANVAS_HEIGHT);
 game.setInputHandler(new InputHandler(camera));
 
 
-let background = new CavesBackground(game.GAME_WIDTH, game.GAME_HEIGHT);
-background.addWeatherEffect(new DarknessWeatherEffect(CANVAS_WIDTH, CANVAS_WIDTH, 0.5));
+let background = new DesertBackground(game.GAME_WIDTH, game.GAME_HEIGHT);
+background.addWeatherEffect(new SandstormWeatherEffect(CANVAS_WIDTH, CANVAS_WIDTH, 0.9));
 game.setBackground(background);
+
+const gameTimer = new GameTimer({x: CANVAS_WIDTH/2, y: CANVAS_HEIGHT - 50}, {x: 10, y: 50});
+game.setTimer(gameTimer);
 
 let playerPos = {x: game.GAME_WIDTH / 2, y: game.GAME_HEIGHT / 2};
 let playerSize = {x: 40, y: 40};
@@ -48,15 +52,19 @@ player.addWeapon(new AimedWeapon(player, game.inputHandler.cursorWorldPos, 5, 25
 // player.addWeapon(new AuraWeapon(player, 2, 100, 0.1, "#00ccff99"));
 // player.addWeapon(new ExplosiveWeapon(player, 10, 150, 30, 1, 100));
 
-const fireEffect = new ParticleSystem(player.pos, {x: 5, y: 5}, 30, 60, "orange", 2, {x: 0, y: -1}, 0.3, Particle);
-fireEffect.start();
+//const fireEffect = new ParticleSystem(player.pos, {x: 5, y: 5}, 30, 60, "orange", 2, {x: 0, y: -1}, 0.3, Particle);
+//fireEffect.start();
 
-const interactable1 = new InteractableObject({x: playerPos.x - 20, y: playerPos.y - 20}, {x: 40, y: 40});
-const interactable2 = new InteractableObject({x: playerPos.x - 50, y: playerPos.y - 50}, {x: 40, y: 40});
+//const interactable1 = new InteractableObject({x: playerPos.x - 20, y: playerPos.y - 20}, {x: 40, y: 40});
+//const interactable2 = new InteractableObject({x: playerPos.x - 50, y: playerPos.y - 50}, {x: 40, y: 40});
 
 
 game.setPlayer(player);
-game.addSpawner();
+game.addSpawner({x: game.GAME_WIDTH / 2 + 1000, y: game.GAME_HEIGHT / 2 + 1000}, 8);
+game.addSpawner({x: game.GAME_WIDTH / 2 - 1000, y: game.GAME_HEIGHT / 2 + 1000}, 8);
+game.addSpawner({x: game.GAME_WIDTH / 2 + 1000, y: game.GAME_HEIGHT / 2 - 1000}, 8);
+game.addSpawner({x: game.GAME_WIDTH / 2 - 1000, y: game.GAME_HEIGHT / 2 - 1000}, 8);
+
 
 const wallObject = new GameObject({x: playerPos.x + 500, y: playerPos.y + 500}, {x: 300, y: 300}, true, "Wall");
 wallObject.rigidObject = true;

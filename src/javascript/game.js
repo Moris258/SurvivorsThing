@@ -3,9 +3,11 @@ import InputHandler from "./inputHandler.js";
 import { checkOverlap, drawRectangle, drawText } from "./utility.js";
 import EnemySpawner from "./enemySpawner.js";
 import GameObject from "./gameObject.js";
-import UIObject from "./UIObject.js";
+import { UpgradeCard } from "./UIObjects/upgradeCard.js";
 import Character from "./character.js";
 import Event from "./event.js";
+import UIObject from "./UIObjects/UIObject.js";
+import Difficulty from "./difficulty.js";
 
 export default class Game{
     constructor(GAME_WIDTH = 800, GAME_HEIGHT = 600, CANVAS_WIDTH = 800, CANVAS_HEIGHT = 800) {
@@ -28,6 +30,8 @@ export default class Game{
         this.gameEnd = false;
         this.player = null;
         this.background = null;
+
+        this.timer = null;
     }
 
     setPlayer(player){
@@ -40,8 +44,13 @@ export default class Game{
         this.background = background;
     }
 
-    addSpawner(){
-        new EnemySpawner({x: game.GAME_WIDTH / 2 + 100, y: game.GAME_HEIGHT / 2 + 100}, 1);
+    setTimer(timer){
+        this.timer = timer;
+        Difficulty.getInstance().setTimer(this.timer);
+    }
+
+    addSpawner(pos, interval){
+        new EnemySpawner(pos, interval);
     }
 
     endGame(){
@@ -133,6 +142,10 @@ export default class Game{
         if(this.background){
             this.background.update(deltaT);
         }
+
+        this.UIObjects.slice().forEach(gameObject => {
+            gameObject.update(deltaT);
+        });
 
         this.gameObjects.slice().forEach(gameObject => {
             gameObject.update(deltaT);

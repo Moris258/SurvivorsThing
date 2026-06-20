@@ -160,7 +160,7 @@ export class LightningBolt extends GameObject {
      * @param {string} color - Color of the lightning effect.
      */
     constructor(pos, damage = 20, strikeRadius = 80, ownerTag = "", delayTime = 0.5, color = "#ffff00") {
-        super(pos, {x: strikeRadius, y: strikeRadius}, false, ownerTag);
+        super(pos, {x: strikeRadius*2, y: strikeRadius*2}, false, ownerTag);
         this.damage = damage;
         this.strikeRadius = strikeRadius;
         this.delayTime = delayTime;
@@ -176,7 +176,7 @@ export class LightningBolt extends GameObject {
     }
 
     drawStrike(){
-        let lightningEffect = new GameObject(this.pos, {x: this.strikeRadius, y: this.strikeRadius}, false, "");
+        let lightningEffect = new GameObject(this.pos, {x: this.strikeRadius*2, y: this.strikeRadius*2}, false, "");
         lightningEffect.lifespan = 1;
         lightningEffect.maxLifespan = 1;
         lightningEffect.draw = (ctx, camera) => {

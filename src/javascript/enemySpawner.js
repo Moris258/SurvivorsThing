@@ -28,6 +28,7 @@ export default class EnemySpawner extends GameObject{
 
     // Method to spawn a random enemy type
     spawnEnemy() {
+        // TODO: Utilize difficulty scaling somehow.
         // Randomly select an enemy class from the list
         const EnemyClass = this.availableEnemies[Math.floor(Math.random() * this.availableEnemies.length)];
 

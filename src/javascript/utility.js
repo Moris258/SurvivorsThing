@@ -86,6 +86,7 @@ export function drawText(ctx, camera, pos, text, color, size = 24, outline = fal
     ctx.textAlign = align;
     ctx.fillText(text, pos.x, pos.y);
     if(outline){
+        ctx.lineWidth = 1;
         ctx.strokeStyle = outlineColor;
         ctx.strokeText(text, pos.x, pos.y);
     }

@@ -6,7 +6,8 @@ import HPPotion from "./hpPotion.js";
 import MagnetItem from "./magnetItem.js";
 import MoveableObject from "./moveableObject.js";
 import Stats from "./stat.js";
-import { UpgradeCard } from "./UIObject.js";
+import UIObject from "./UIObjects/UIObject.js";
+import { UpgradeCard } from "./UIObjects/upgradeCard.js";
 import { drawCircle, drawRectangle, moveTowards, pointsDistance, randomFloat, randomInt } from "./utility.js";
 import AimedWeapon from "./weapons/aimedWeapon.js";
 import AuraWeapon from "./weapons/auraWeapon.js";
@@ -137,7 +138,7 @@ export class Player extends Character{
         this.onLevelUp.addEvent(this.onLevelUpHandler);
 
         
-        let XPBar = new GameObject({x: 0, y: 0}, {x: 0, y: 0}, false, "UI");
+        let XPBar = new UIObject({x: 0, y: 0}, {x: 0, y: 0});
         XPBar.draw = this.drawXPBar;
         XPBar.player = this;
 

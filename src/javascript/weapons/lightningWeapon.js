@@ -18,7 +18,7 @@ export default class LightningWeapon extends Weapon {
      * @param {number} numTargets - Number of random targets to strike (default: 1).
      * @param {string} lightningColor - Color of the lightning effect (default: "#00f7ff").
      */
-    constructor(owner, initialDamage = 10, fireRate = 0.5, delayTime = 1, strikeRadius = 80, numTargets = 1, lightningColor = "#00f7ff") {
+    constructor(owner, initialDamage = 10, fireRate = 0.5, delayTime = 1, strikeRadius = 50, numTargets = 1, lightningColor = "#00f7ff") {
         super(owner, initialDamage, 0, 0, fireRate);
         this.stats.getStat("Speed").setUpgradeable(false);
         this.stats.getStat("Size").setUpgradeable(false);
@@ -28,7 +28,7 @@ export default class LightningWeapon extends Weapon {
         // Set up the weapon stats
         this.stats.addStat("DelayTime", delayTime, -1, 0.1);
         this.stats.addStat("StrikeRadius", strikeRadius, -1, 5);
-        this.stats.addStat("NumTargets", numTargets, -1, 1);
+        this.stats.addStat("NumTargets", numTargets, -1, 0.5);
     }
 
     /**
